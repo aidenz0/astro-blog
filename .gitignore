@@ -34,3 +34,5 @@ docs/
 .obsidian/
 
 .vscode/ 
+
+src/data/blog/astro_blog/
