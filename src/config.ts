@@ -2,7 +2,7 @@ export const SITE = {
   website: "https://aidenz.eu.org/", // replace this with your deployed domain
   author: "Aidenz",
   profile: "",
-  desc: "一个个人的技术博客",
+  desc: "一个个人技术博客",
   title: "Aidenz",
   ogImage: "astropaper-og.jpg",
   lightAndDarkMode: true,

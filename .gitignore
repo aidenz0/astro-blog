@@ -26,3 +26,10 @@ pnpm-debug.log*
 # pagefind
 
 public/pagefind
+.vercel
+
+# docs folder (local reference)
+docs/
+
+.obsidian/
+

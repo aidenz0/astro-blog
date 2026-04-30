@@ -42,16 +42,18 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
       </a>
 
       <p>
-        AstroPaper is a minimal, responsive, accessible and SEO-friendly Astro
-        blog theme. This theme follows best practices and provides accessibility
-        out of the box. Light and dark mode are supported by default. Moreover,
-        additional color schemes can also be configured.
+        我是aidenz，一名专注于人工智能系统与工程落地的开发者。
+        当前主要研究方向包括数据挖掘、深度学习、大模型和智能体。
+        在这里，我会持续记录从算法设计到系统实现的全过程，分享真实的工程经验、踩坑总结与技术思考。
+        希望这些内容不仅对研究者有价值，也能为工程实践提供参考。
+        🚀 关注领域：AI工程 / 大模型训练 / 智能体 / 高性能计算
+✍️       持续输出：技术博客 + 项目实践 + 方法论总结
       </p>
       <p class="mt-2">
         Read the blog posts or check
         <LinkButton
           class="underline decoration-dashed underline-offset-4 hover:text-accent"
-          href="https://github.com/satnaing/astro-paper#readme"
+          href="https://github.com/aidenz0"
         >
           README
         </LinkButton> for more info.
@@ -60,7 +62,7 @@ const recentPosts = sortedPosts.filter(({ data }) => !data.featured);
         // only display if at least one social link is enabled
         SOCIALS.length > 0 && (
           <div class="mt-4 flex max-sm:flex-col sm:items-center">
-            <div class="me-2 mb-1 whitespace-nowrap sm:mb-0">Social Links:</div>
+            <div class="me-2 mb-1 whitespace-nowrap sm:mb-0">链接:</div>
             <Socials />
           </div>
         )
