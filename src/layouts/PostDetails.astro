@@ -5,12 +5,14 @@ import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
 import Datetime from "@/components/Datetime.astro";
+import ReadingTime from "@/components/ReadingTime.astro";
 import EditPost from "@/components/EditPost.astro";
 import ShareLinks from "@/components/ShareLinks.astro";
 import BackButton from "@/components/BackButton.astro";
 import BackToTopButton from "@/components/BackToTopButton.astro";
 import { getPath } from "@/utils/getPath";
 import { slugifyStr } from "@/utils/slugify";
+import { getReadingTime } from "@/utils/readingTime";
 import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
 import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
 import { SITE } from "@/config";
@@ -36,6 +38,11 @@ const {
 } = post.data;
 
 const { Content } = await render(post);
+
+// Calculate reading time and word count
+const { body } = post;
+const content = typeof body === 'string' ? body : '';
+const readingTime = getReadingTime(content);
 
 let ogImageUrl: string | undefined;
 
@@ -96,8 +103,9 @@ const nextPost =
     >
       {title}
     </h1>
-    <div class="my-2 flex items-center gap-2">
+    <div class="my-2 flex flex-wrap items-center gap-2">
       <Datetime {pubDatetime} {modDatetime} {timezone} size="lg" />
+      <ReadingTime minutes={readingTime.minutes} words={readingTime.words} />
       <span
         aria-hidden="true"
         class:list={[
