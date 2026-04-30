@@ -1,0 +1,128 @@
+---
+/**
+ * BlogStats - 博客文章字数统计组件
+ * 显示总文章数、总字数、预计阅读时间
+ */
+import { getCollection } from "astro:content";
+
+interface StatItem {
+  label: string;
+  value: string | number;
+}
+
+// 获取所有文章
+const allPosts = await getCollection("blog");
+
+// 统计数据
+const totalPosts = allPosts.length;
+let totalWords = 0;
+let totalChars = 0;
+
+for (const post of allPosts) {
+  const content = post.body;
+  // 统计中文字符数（包括汉字和中文标点）
+  const chineseChars = (content.match(/[一-龥　-〿＀-￯]/g) || []).length;
+  // 统计英文单词数
+  const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
+
+  totalChars += chineseChars + englishWords;
+  // 中文按字符数算，英��按单词数算
+  totalWords += chineseChars + englishWords;
+}
+
+// 预计阅读时间（中文按400字/分钟，英文按200词/分钟）
+const estimatedMinutes = Math.ceil(totalWords / 400);
+const readingTime = estimatedMinutes < 60
+  ? `${estimatedMinutes} 分钟`
+  : `${Math.floor(estimatedMinutes / 60)} 小时 ${estimatedMinutes % 60} 分钟`;
+
+// 格式化数字（添加千位分隔符）
+const formatNumber = (num: number): string => {
+  return num.toLocaleString("zh-CN");
+};
+
+const stats: StatItem[] = [
+  { label: "文章总数", value: totalPosts },
+  { label: "总字数", value: formatNumber(totalWords) },
+  { label: "预计阅读时间", value: readingTime },
+];
+---
+
+<section class="blog-stats" aria-label="博客统计信息">
+  <div class="stats-container">
+    {stats.map((stat) => (
+      <div class="stat-item">
+        <div class="stat-value">{stat.value}</div>
+        <div class="stat-label">{stat.label}</div>
+      </div>
+    ))}
+  </div>
+</section>
+
+<style>
+  .blog-stats {
+    width: 100%;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: var(--bg-color, #ffffff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  }
+
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-color, #3b82f6);
+    line-height: 1.2;
+  }
+
+  .stat-label {
+    font-size: 0.875rem;
+    color: var(--text-color, #6b7280);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 640px) {
+    .blog-stats {
+      padding: 1.5rem 1rem;
+      margin-top: 2rem;
+    }
+
+    .stats-container {
+      gap: 1.5rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* 深色模式支持 */
+  @media (prefers-color-scheme: dark) {
+    .blog-stats {
+      --bg-color: #1f2937;
+      --border-color: #374151;
+      --text-color: #9ca3af;
+    }
+  }
+</style>
