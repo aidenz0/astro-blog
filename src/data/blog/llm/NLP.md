@@ -2,7 +2,7 @@
 title: NLP基础知识
 author: Aidenz
 pubDatetime: 2025-12-01T04:06:31Z
-slug: example-draft-post
+slug: nlp-basics
 featured: true
 draft: false
 tags:
