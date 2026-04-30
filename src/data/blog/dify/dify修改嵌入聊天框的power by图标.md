@@ -1,7 +1,7 @@
 ---
 title: dify修改嵌入聊天框的power by图标
 author: Aidenz
-pubDatetime: 2025-09-011T04:06:31Z
+pubDatetime: 2025-09-11T04:06:31+08:00
 slug:
 featured: true
 draft: false
