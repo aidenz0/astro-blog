@@ -3,7 +3,7 @@ title: Agent高级知识拓展
 author: Aidenz
 pubDatetime: 2022-02-02T04:06:31Z
 slug: agent-advanced-knowledge
-featured: false
+featured: true
 draft: false
 tags:
   - Agent

@@ -3,7 +3,7 @@ title: git常用命令
 author: Aidenz
 pubDatetime: 2024-06-29T04:06:31Z
 slug:
-featured: false
+featured: true
 draft: false
 tags:
   - git

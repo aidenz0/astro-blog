@@ -3,7 +3,7 @@ title: agent经典范式
 author: Aidenz
 pubDatetime: 2026-01-03T04:06:31Z
 slug:
-featured: false
+featured: true
 draft: false
 tags:
   - LLM
