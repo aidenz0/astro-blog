@@ -19,15 +19,22 @@ let totalWords = 0;
 let totalChars = 0;
 
 for (const post of allPosts) {
-  const content = post.body;
-  // 统计中文字符数（包括汉字和中文标点）
-  const chineseChars = (content.match(/[一-龥　-〿＀-￯]/g) || []).length;
-  // 统计英文单词数
-  const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
+  const content = post.body || "";
+  if (!content) continue;
 
-  totalChars += chineseChars + englishWords;
-  // 中文按字符数算，英��按单词数算
-  totalWords += chineseChars + englishWords;
+  try {
+    // 统计中文字符数（包括汉字和中文标点）
+    const chineseChars = (content.match(/[一-龥　-〿＀-￯]/g) || []).length;
+    // 统计英文单词数
+    const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
+
+    totalChars += chineseChars + englishWords;
+    // 中文按字符数算，英文按单词数算
+    totalWords += chineseChars + englishWords;
+  } catch (error) {
+    console.error(`Error processing post: ${post.id}`, error);
+    continue;
+  }
 }
 
 // 预计阅读时间（中文按400字/分钟，英文按200词/分钟）
