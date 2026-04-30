@@ -36,3 +36,5 @@ docs/
 .vscode/ 
 
 src/data/blog/astro_blog/
+
+src/data/blog/_releases/
