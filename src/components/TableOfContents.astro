@@ -1,0 +1,138 @@
+---
+import IconList from "@/assets/icons/IconList.svg";
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+
+interface Props {
+  headings: Heading[];
+}
+
+const { headings } = Astro.props;
+
+// Filter to only h2, h3, h4 for a cleaner TOC
+const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 4);
+---
+
+{tocHeadings.length > 1 && (
+  <nav
+    id="table-of-contents"
+    class="toc-container fixed start-0 top-20 hidden lg:block w-56 ps-4"
+    aria-label="Table of contents"
+  >
+    <div class="max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+      <div class="flex items-center gap-2 mb-3 text-sm font-medium text-accent">
+        <IconList class="w-4 h-4" />
+        <span>目录</span>
+      </div>
+      <ul class="toc-list space-y-1.5 text-sm">
+        {tocHeadings.map(heading => (
+          <li
+            class:list={[
+              "toc-item",
+              { "pl-0": heading.depth === 2 },
+              { "pl-4": heading.depth === 3 },
+              { "pl-8": heading.depth === 4 },
+            ]}
+          >
+            <a
+              href={`#${heading.slug}`}
+              class="toc-link block py-1 text-muted-foreground/70 hover:text-accent transition-colors duration-200 line-clamp-2"
+              data-toc-slug={heading.slug}
+            >
+              {heading.text}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </nav>
+)}
+
+<style>
+  .toc-link {
+    border-left: 2px solid transparent;
+    padding-left: 0.75rem;
+    margin-left: -0.75rem;
+  }
+
+  .toc-link.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted) transparent;
+  }
+</style>
+
+<script>
+  function initTOC() {
+    const tocLinks = document.querySelectorAll<HTMLAnchorElement>('[data-toc-slug]');
+    if (tocLinks.length === 0) return;
+
+    // Get all headings from the article
+    const headings = Array.from(document.querySelectorAll<HTMLElement>('#article h2, #article h3, #article h4'));
+
+    // Create intersection observer to track which heading is in view
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute('id');
+          const link = document.querySelector<HTMLAnchorElement>(`[data-toc-slug="${id}"]`);
+
+          if (entry.isIntersecting) {
+            // Remove active class from all links
+            tocLinks.forEach(l => l.classList.remove('active'));
+            // Add active class to current link
+            link?.classList.add('active');
+
+            // Auto-scroll TOC to keep active link visible
+            const tocContainer = link?.closest('.max-h-\\[calc\\(100vh-6rem\\)\\]');
+            if (tocContainer && link) {
+              tocContainer.scrollTo({
+                top: link.offsetTop - tocContainer.clientHeight / 3,
+                behavior: 'smooth'
+              });
+            }
+          }
+        });
+      },
+      {
+        rootMargin: '-80px 0px -60% 0px',
+        threshold: 0,
+      }
+    );
+
+    // Observe all headings
+    headings.forEach(heading => {
+      if (heading.id) {
+        observer.observe(heading);
+      }
+    });
+
+    // Smooth scroll on click
+    tocLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const id = link.getAttribute('data-toc-slug');
+        const target = document.getElementById(id || '');
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Update URL hash without scrolling
+          history.pushState(null, '', `#${id}`);
+        }
+      });
+    });
+  }
+
+  // Run on page load
+  initTOC();
+
+  // Re-run after page transitions
+  document.addEventListener('astro:after-swap', initTOC);
+</script>
