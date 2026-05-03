@@ -3,7 +3,7 @@ title: linux 服务器ssh 免密登录配置
 author: Aidenz
 pubDatetime: 2025-06-06T04:06:31Z
 slug: ssh-linux-server
-featured: true
+featured: false
 draft: false
 tags:
   - linux

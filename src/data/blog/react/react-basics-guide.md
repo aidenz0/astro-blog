@@ -3,7 +3,7 @@ title: React 入门完全指南 - 从零开始构建现代 UI
 author: Aidenz
 pubDatetime: 2026-05-03T07:00:00Z
 slug: react-basics-guide
-featured: false
+featured: true
 draft: false
 tags:
   - React
