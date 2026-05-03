@@ -379,4 +379,4 @@ useEffect(() => {
 
 ## 下一篇
 
-[Pattern 3: Props 与组件组合 - 让组件之间传递数据和复用 UI](/posts/react-pattern-3-props-composition)
+[Pattern 3: Props 与组件组合 - 让组件之间传递数据和复用 UI](/posts/react/react-pattern-3-props-composition)

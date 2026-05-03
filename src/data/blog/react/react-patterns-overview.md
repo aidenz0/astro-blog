@@ -23,14 +23,14 @@ description: 8 个 React 核心模式的系列导览，涵盖 useState、useEffe
 
 | 序号 | 模式 | 核心解决的问题 | 文章链接 |
 |------|------|----------------|----------|
-| 1 | **useState** | 组件如何记住数据？ | [Pattern 1: useState 状态管理](/posts/react-pattern-1-usestate) |
-| 2 | **useEffect** | 组件如何与外部世界交互？ | [Pattern 2: useEffect 副作用](/posts/react-pattern-2-useeffect) |
-| 3 | **Props 与组件组合** | 组件之间如何传递数据和复用 UI？ | [Pattern 3: Props 与组件组合](/posts/react-pattern-3-props-composition) |
-| 4 | **条件渲染** | 如何根据不同状态显示不同 UI？ | [Pattern 4: 条件渲染](/posts/react-pattern-4-conditional-rendering) |
-| 5 | **列表渲染与 Key** | 如何高效渲染一组数据？ | [Pattern 5: 列表渲染与 Key](/posts/react-pattern-5-list-keys) |
-| 6 | **事件处理与表单** | 如何处理用户输入和交互？ | [Pattern 6: 事件处理与表单](/posts/react-pattern-6-forms-events) |
-| 7 | **Context API** | 如何避免 Props 层层传递？ | [Pattern 7: Context API](/posts/react-pattern-7-context-api) |
-| 8 | **自定义 Hooks 与性能** | 如何复用逻辑和优化性能？ | [Pattern 8: 自定义 Hooks 与性能优化](/posts/react-pattern-8-custom-hooks-performance) |
+| 1 | **useState** | 组件如何记住数据？ | [Pattern 1: useState 状态管理](/posts/react/react-pattern-1-usestate) |
+| 2 | **useEffect** | 组件如何与外部世界交互？ | [Pattern 2: useEffect 副作用](/posts/react/react-pattern-2-useeffect) |
+| 3 | **Props 与组件组合** | 组件之间如何传递数据和复用 UI？ | [Pattern 3: Props 与组件组合](/posts/react/react-pattern-3-props-composition) |
+| 4 | **条件渲染** | 如何根据不同状态显示不同 UI？ | [Pattern 4: 条件渲染](/posts/react/react-pattern-4-conditional-rendering) |
+| 5 | **列表渲染与 Key** | 如何高效渲染一组数据？ | [Pattern 5: 列表渲染与 Key](/posts/react/react-pattern-5-list-keys) |
+| 6 | **事件处理与表单** | 如何处理用户输入和交互？ | [Pattern 6: 事件处理与表单](/posts/react/react-pattern-6-forms-events) |
+| 7 | **Context API** | 如何避免 Props 层层传递？ | [Pattern 7: Context API](/posts/react/react-pattern-7-context-api) |
+| 8 | **自定义 Hooks 与性能** | 如何复用逻辑和优化性能？ | [Pattern 8: 自定义 Hooks 与性能优化](/posts/react/react-pattern-8-custom-hooks-performance) |
 
 ## 技术栈
 
@@ -78,7 +78,7 @@ src/
 
 阅读本系列前，建议先掌握：
 
-- [React 入门完全指南](/posts/react-basics-guide) 中的基础知识
+- [React 入门完全指南](/posts/react/react-basics-guide) 中的基础知识
 - JavaScript ES6+ 语法（箭头函数、解构、展开运算符）
 - TypeScript 基础（interface、类型注解）
 

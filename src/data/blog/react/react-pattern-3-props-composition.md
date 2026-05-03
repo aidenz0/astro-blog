@@ -363,4 +363,4 @@ import { useTheme } from '@/contexts/ThemeContext';
 
 ## 下一篇
 
-[Pattern 4: 条件渲染 - 根据状态显示不同的 UI](/posts/react-pattern-4-conditional-rendering)
+[Pattern 4: 条件渲染 - 根据状态显示不同的 UI](/posts/react/react-pattern-4-conditional-rendering)

@@ -341,4 +341,4 @@ setArr([...arr, 4]);  // 新数组，触发渲染
 
 ## 下一篇
 
-[Pattern 2: useEffect - 让组件与外部世界交互](/posts/react-pattern-2-useeffect)
+[Pattern 2: useEffect - 让组件与外部世界交互](/posts/react/react-pattern-2-useeffect)

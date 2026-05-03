@@ -388,4 +388,4 @@ const ThemeProvider = ({ children }) => {
 
 ## 下一篇
 
-[Pattern 8: 自定义 Hooks 与性能优化](/posts/react-pattern-8-custom-hooks-performance)
+[Pattern 8: 自定义 Hooks 与性能优化](/posts/react/react-pattern-8-custom-hooks-performance)

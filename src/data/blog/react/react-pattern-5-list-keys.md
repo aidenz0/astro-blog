@@ -367,4 +367,4 @@ const deleteTodo = (id) => {
 
 ## 下一篇
 
-[Pattern 6: 事件处理与表单 - 处理用户输入和交互](/posts/react-pattern-6-forms-events)
+[Pattern 6: 事件处理与表单 - 处理用户输入和交互](/posts/react/react-pattern-6-forms-events)

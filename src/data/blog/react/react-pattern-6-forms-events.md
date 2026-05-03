@@ -459,4 +459,4 @@ const handleSubmit = () => {
 
 ## 下一篇
 
-[Pattern 7: Context API - 跨组件共享状态](/posts/react-pattern-7-context-api)
+[Pattern 7: Context API - 跨组件共享状态](/posts/react/react-pattern-7-context-api)

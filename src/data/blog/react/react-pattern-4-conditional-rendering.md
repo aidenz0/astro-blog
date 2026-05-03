@@ -388,4 +388,4 @@ if (a && b) return <B />;
 
 ## 下一篇
 
-[Pattern 5: 列表渲染与 Key - 高效渲染一组数据](/posts/react-pattern-5-list-keys)
+[Pattern 5: 列表渲染与 Key - 高效渲染一组数据](/posts/react/react-pattern-5-list-keys)
