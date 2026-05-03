@@ -14,7 +14,7 @@ export const SITE = {
   editPost: {
     enabled: true,
     text: "Edit page",
-    url: "https://github.com/aidenz0",
+    url: "https://github.com/aidenz0/astro-blog/blob/main/",
   },
   dynamicOgImage: true,
   dir: "ltr", // "rtl" | "auto"
