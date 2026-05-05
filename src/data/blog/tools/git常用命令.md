@@ -1,265 +1,435 @@
 ---
-title: git常用命令
+title: Git 常用命令完全指南 - 从入门到进阶
 author: Aidenz
-pubDatetime: 2024-06-29T04:06:31Z
-slug:
+pubDatetime: 2026-05-05T04:06:31Z
+slug: git-commands-guide
 featured: true
 draft: false
 tags:
   - git
-description: git常用命令
+  - 工具
+  - 入门教程
+description: 系统整理 Git 常用命令，从基础配置、提交与分支，到高级的 HEAD 操作、相对引用和撤销变更，适合初学者和日常查阅。
 ---
-# git 设置用户名和邮箱
 
-全局配置用户名和邮箱
+## 引言
 
-  
+Git 是目前最流行的分布式版本控制系统。无论你是个人开发还是团队协作，Git 都能帮你追踪代码变更、管理分支和协作开发。本文系统梳理 Git 从入门到进阶的核心命令。
 
-全局配置适用于所有仓库：
+## 一、初始配置
 
-```shell
+### 1.1 设置用户名和邮箱
 
+每次 Git 提交都会附带作者信息，所以**第一件事就是配置用户名和邮箱**。
+
+**全局配置（所有仓库生效）：**
+
+```bash
 git config --global user.name "你的用户名"
-
 git config --global user.email "你的邮箱@example.com"
-
 ```
 
-**验证配置是否成功：**
+**局部配置（仅当前仓库生效）：**
 
-```shell
-
-git config --global user.name
-
-git config --global user.email
-
-```
-
-  局部设置（仅适用于当前仓库）
-```Bash
+```bash
 git config user.name "你的名字"
 git config user.email "你的邮箱@example.com"
 ```
-**查看当前配置**：
-```Bash
+
+### 1.2 查看配置
+
+```bash
 # 查看全局配置
 git config --global --list
 
-# 查看当前仓库配置
+# 查看当前仓库配置（包含全局 + 局部）
 git config --list
-```
-# 基础
 
-Git 仓库中的提交记录保存的是你的目录下所有文件的快照，就像是把整个目录复制，然后再粘贴一样，但比复制粘贴优雅许多！
-
-  
-
-Git 希望提交记录尽可能地轻量，因此在你每次进行提交时，它并不会盲目地复制整个目录。条件允许的情况下，它会将当前版本与仓库中的上一个版本进行对比，并把所有的差异打包到一起作为一个提交记录。
-
-## git commit
-
-将暂存区的内容添加到本地仓库中
-
-```shell
-
-git commit
-
+# 查看某个具体配置
+git config --global user.name
+git config --global user.email
 ```
 
-## git branch
+**全局 vs 局部配置：**
 
-Git 的分支也非常轻量。它们只是简单地指向某个提交记录 —— 仅此而已。所以许多 Git 爱好者传颂：
+| 配置类型 | 作用范围 | 配置文件位置 | 常用场景 |
+|----------|----------|-------------|----------|
+| 全局（`--global`） | 所有仓库 | `~/.gitconfig` | 个人用户名、邮箱 |
+| 局部（无 flag） | 当前仓库 | `.git/config` | 项目特定配置 |
 
-  
+## 二、仓库基础操作
 
-```
-
-早建分支！多用分支！
-
-```
-
-  
-
-这是因为即使创建再多的分支也不会造成储存或内存上的开销，并且按逻辑分解工作到不同的分支要比维护那些特别臃肿的分支简单多了。
-
-  
-
-在将分支和提交记录结合起来后，我们会看到两者如何协作。现在只要记住使用分支其实就相当于在说：“我想基于这个提交以及它所有的 parent 提交进行新的工作。”
-
-创建分支
-
-```shell
-
-git branch <name>
-
-```
-
-  
-  
-
-下面的命令会让我们在提交修改之前先切换到新的分支上
-
-  
-
-```
-
-git checkout <name>
-
-```
-
->在 Git 2.23 版本中，引入了一个名为 `git switch` 的新命令，最终会取代 `git checkout`，因为 `checkout` 作为单个命令有点超载（它承载了很多独立的功能）。
-
-  
-
-有个更简洁的方式：如果你想创建一个新的分支同时切换到新创建的分支的话，可以通过 `git checkout -b <your-branch-name>` 来实现。
-
-## git merge
-
-接下来咱们看看如何将两个分支合并到一起。就是说我们新建一个分支，在其上开发某个新功能，开发完成后再合并回主线。
-
-  
-
-咱们先来看一下第一种方法 —— `git merge`。在 Git 中合并两个分支时会产生一个特殊的提交记录，它有两个 parent 节点。翻译成自然语言相当于：“我要把这两个 parent 节点本身及它们所有的祖先都包含进来。”
-
-将bugFix 分支 合并到main中
-
-```shell
-
-git checkout bugFix
-
-git merge main
-
-```
-
-## git rebase
-
-第二种合并分支的方法是 `git rebase`。Rebase 实际上就是取出一系列的提交记录，“复制”它们，然后在另外一个地方逐个的放下去。
-
-  
-
-Rebase 的优势就是可以创造更线性的提交历史，这听上去有些难以理解。如果只允许使用 Rebase 的话，代码库的提交历史将会变得异常清晰。
-
-将bugFix分支合并到main：
-
-```shell
-
-git checkout bugFix
-
-git rebase main
-
-```
-
-  
-
-# 高级
-
-## 在树上移动
-
-我们首先看一下 “HEAD”。 HEAD 是一个对当前所在分支的符号引用 —— 也就是指向你正在其基础上进行工作的提交记录。
-
-  
-
-HEAD 总是指向当前分支上最近一次提交记录。大多数修改提交树的 Git 命令都是从改变 HEAD 的指向开始的。
-
-  
-
-HEAD 通常情况下是指向分支名的（如 bugFix）。在你提交时，改变了 bugFix 的状态，这一变化通过 HEAD 变得可见。
-
-  
-
-```shell
-
-`git checkout <commit-hash>`
-
-```
-
-## 相对引用
-
-通过指定提交记录哈希值的方式在 Git 中移动不太方便。在实际应用时，并没有漂亮的可视化提交树供你参考，所以你就不得不用 `git log` 来查查看提交记录的哈希值。
-
-  
-
-并且哈希值在真实的 Git 世界中也会更长。
-
-比较令人欣慰的是，Git 对哈希的处理很智能。你只需要提供能够唯一标识提交记录的前几个字符即可。因此我可以仅输入`fed2` 而不是上面的一长串字符。
-
-  
-
-正如我前面所说，通过哈希值指定提交记录很不方便，所以 Git 引入了相对引用。这个就很厉害了!
-
-  
-
-使用相对引用的话，你就可以从一个易于记忆的地方（比如 `bugFix` 分支或 `HEAD`）开始计算。
-
-  
-
-相对引用非常给力，这里我介绍两个简单的用法：
-
-  
-
-- 使用 `^` 向上移动 1 个提交记录
-
-- 使用 `~<num>` 向上移动多个提交记录，如 `~3`
-
-HEAD在main分支向上移动一个提交记录：
+### 2.1 初始化与克隆
 
 ```bash
+# 在当前目录初始化 Git 仓库
+git init
 
+# 克隆远程仓库
+git clone https://github.com/user/repo.git
+
+# 克隆到指定目录
+git clone https://github.com/user/repo.git my-folder
+```
+
+### 2.2 工作流程概览
+
+Git 的工作区域分为三个部分：
+
+```
+工作区（Working Directory）
+  │  git add
+  ▼
+暂存区（Staging Area / Index）
+  │  git commit
+  ▼
+本地仓库（Local Repository）
+  │  git push
+  ▼
+远程仓库（Remote Repository）
+```
+
+Git 仓库保存的是文件的**快照**。每次提交时，Git 不会盲目复制整个目录，而是将当前版本与上一个版本对比，只把差异打包存储，因此提交记录非常轻量。
+
+### 2.3 查看状态与差异
+
+```bash
+# 查看工作区和暂存区的状态
+git status
+
+# 查看工作区与暂存区的差异（未 add 的改动）
+git diff
+
+# 查看暂存区与上次提交的差异（已 add 未 commit 的改动）
+git diff --staged
+
+# 查看提交历史
+git log
+
+# 简洁的一行格式
+git log --oneline
+
+# 图形化显示分支
+git log --oneline --graph --all
+```
+
+## 三、提交（commit）
+
+### 3.1 基本提交
+
+```bash
+# 1. 将文件添加到暂存区
+git add <file>          # 添加单个文件
+git add .               # 添加所有改动
+
+# 2. 提交到本地仓库
+git commit -m "提交说明"
+
+# 添加所有已跟踪文件的改动并提交（跳过 add）
+git commit -am "提交说明"
+```
+
+### 3.2 提交规范
+
+好的提交信息能让团队协作更顺畅：
+
+```bash
+# 推荐格式：<类型>: <简短描述>
+git commit -m "feat: 添加用户登录功能"
+git commit -m "fix: 修复首页加载缓慢问题"
+git commit -m "docs: 更新 README 文档"
+git commit -m "refactor: 重构用户模块代码"
+```
+
+**常用提交类型：**
+
+| 类型 | 用途 |
+|------|------|
+| `feat` | 新功能 |
+| `fix` | 修复 bug |
+| `docs` | 文档变更 |
+| `style` | 代码格式（不影响逻辑） |
+| `refactor` | 重构（既不修 bug 也不加功能） |
+| `test` | 测试相关 |
+| `chore` | 构建/工具变更 |
+
+## 四、分支（branch）
+
+### 4.1 分支的概念
+
+Git 的分支非常轻量——它只是一个指向某个提交记录的指针。因此：
+
+> 早建分支！多用分支！
+
+创建再多的分支也不会造成存储或内存上的开销，按逻辑分解工作到不同的分支比维护臃肿的分支简单得多。
+
+### 4.2 分支操作
+
+```bash
+# 查看所有分支（* 号表示当前分支）
+git branch
+
+# 创建新分支
+git branch <branch-name>
+
+# 切换分支
+git switch <branch-name>         # Git 2.23+ 推荐
+git checkout <branch-name>       # 旧写法
+
+# 创建并切换到新分支（一步到位）
+git switch -c <branch-name>      # Git 2.23+ 推荐
+git checkout -b <branch-name>    # 旧写法
+
+# 删除分支（已合并的分支）
+git branch -d <branch-name>
+
+# 强制删除分支（未合并也删除）
+git branch -D <branch-name>
+
+# 重命名分支
+git branch -m <old-name> <new-name>
+```
+
+### 4.3 合并分支（merge）
+
+将两个分支合并到一起，会产生一个有两个 parent 节点的特殊提交记录。
+
+```bash
+# 1. 切换到目标分支（你想把改动合并到的分支）
 git checkout main
 
-git checkout main^
-
+# 2. 将 feature 分支合并到 main
+git merge feature
 ```
 
-HEAD在main分支上向上移动`<num>`个提交记录
-
-```bash
-
-git checkout main~<num>
+**合并流程图：**
 
 ```
+合并前：
+main:    A ← B ← C
+                ↖
+feature:         D ← E
 
-> `git branch -f` 的含义是 **强制移动（重置）分支指针**，让某个分支直接指向指定的提交（commit），**不会管当前分支历史是否一致**。
+合并后：
+main:    A ← B ← C ← F (merge commit)
+                ↖     ↗
+feature:         D ← E
+```
 
-> ```bash
+### 4.4 变基（rebase）
 
-> git branch -f <分支名> <提交ID | 另一个分支>
-
-> ```
-
-  
-  
-
-## 撤销变更
-
-在 Git 里撤销变更的方法很多。和提交一样，撤销变更由底层部分（暂存区的独立文件或者片段）和上层部分（变更到底是通过哪种方式被撤销的）组成。我们这个应用主要关注的是后者。
-
-  
-
-主要有两种方法用来撤销变更 —— 一是 `git reset`，还有就是 `git revert`。接下来咱们逐个进行讲解。
-
-### git reset
-
-`git reset` 通过把分支记录回退几个提交记录来实现撤销改动。你可以将这想象成“改写历史”。`git reset` 向上移动分支，原来指向的提交记录就跟从来没有提交过一样。
-
-本地分支中使用 `git reset` 很方便，但是这种“改写历史”的方法对大家一起使用的远程分支是无效的。
+Rebase 是另一种合并方式，它将一系列提交"复制"到目标分支的顶部，创造更线性的提交历史。
 
 ```bash
+# 将当前分支变基到 main 上
+git checkout feature
+git rebase main
+```
 
+**merge vs rebase：**
+
+| 特性 | merge | rebase |
+|------|-------|--------|
+| 提交历史 | 保留分支结构，有合并提交 | 线性历史，更清晰 |
+| 是否改写历史 | 否 | 是（复制提交） |
+| 适用场景 | 公共分支、保留完整历史 | 个人分支、整理历史 |
+| 冲突处理 | 一次解决 | 逐个提交解决 |
+
+> **注意：** 不要对已经推送到远程的公共分支使用 rebase，因为 rebase 会改写提交历史。
+
+## 五、远程操作
+
+### 5.1 远程仓库管理
+
+```bash
+# 查看远程仓库
+git remote -v
+
+# 添加远程仓库
+git remote add origin https://github.com/user/repo.git
+
+# 修改远程仓库地址
+git remote set-url origin https://github.com/user/new-repo.git
+```
+
+### 5.2 推送与拉取
+
+```bash
+# 推送到远程（-u 设置上游分支，之后只需 git push）
+git push -u origin main
+git push
+
+# 从远程拉取（自动合并）
+git pull
+
+# 拉取但不合并（只更新本地跟踪信息）
+git fetch
+
+# 拉取远程分支并创建本地分支
+git switch -c feature origin/feature
+```
+
+**fetch vs pull：**
+
+| 命令 | 作用 | 是否自动合并 |
+|------|------|-------------|
+| `git fetch` | 下载远程更新到本地跟踪分支 | 否 |
+| `git pull` | 下载 + 合并到当前分支 | 是（等同于 fetch + merge） |
+
+## 六、HEAD 与在提交树上移动
+
+### 6.1 什么是 HEAD？
+
+HEAD 是一个指向**当前所在分支**的引用，也就是你正在其基础上工作的提交记录。
+
+```
+HEAD → main → C3（最新提交）
+```
+
+大多数修改提交树的 Git 命令都是从改变 HEAD 的指向开始的。
+
+### 6.2 移动 HEAD
+
+```bash
+# 直接移动 HEAD 到指定提交（通过哈希值）
+git checkout <commit-hash>
+
+# 哈希值只需提供能唯一标识的前几个字符
+git checkout fed2    # 而不是 fed2a3b4c5d6...
+```
+
+## 七、相对引用
+
+通过哈希值移动不方便，Git 引入了**相对引用**，从一个已知位置（如分支名或 HEAD）开始计算。
+
+### 7.1 基本语法
+
+```bash
+# ^ 表示向上移动 1 个提交
+git checkout main^        # main 的父提交
+git checkout main^^       # main 的祖父提交
+
+# ~<num> 表示向上移动 num 个提交
+git checkout main~3       # main 的第 3 代祖先
+```
+
+**相对引用示例：**
+
+```
+提交历史：C1 ← C2 ← C3 ← C4 (main, HEAD)
+
+main^   → C3
+main~2  → C2
+main~3  → C1
+HEAD~1  → C3（等同于 main^）
+```
+
+### 7.2 强制移动分支
+
+```bash
+# 将分支强制指向某个提交
+git branch -f main HEAD~3    # 将 main 回退 3 个提交
+```
+
+> `git branch -f` 会**强制移动分支指针**，不管当前分支历史是否一致。谨慎使用。
+
+## 八、撤销变更
+
+### 8.1 git reset（本地撤销）
+
+`git reset` 通过回退分支指针来撤销提交，相当于"改写历史"。
+
+```bash
+# 回退 1 个提交（保留改动在工作区）
 git reset HEAD~1
 
+# 回退 1 个提交（保留改动在暂存区）
+git reset --soft HEAD~1
+
+# 回退 1 个提交（彻底丢弃改动）
+git reset --hard HEAD~1
 ```
 
-### git revert
+**reset 的三种模式：**
+
+| 模式 | HEAD | 暂存区 | 工作区 | 用途 |
+|------|------|--------|--------|------|
+| `--soft` | 移动 | 不变 | 不变 | 撤销提交，保留所有改动 |
+| `--mixed`（默认） | 移动 | 重置 | 不变 | 撤销提交和 add |
+| `--hard` | 移动 | 重置 | 重置 | 彻底回退到某个状态 |
+
+> **注意：** `git reset` 只适用于本地分支。已经推送到远程的提交不要用 reset，应该用 revert。
+
+### 8.2 git revert（安全撤销）
+
+`git revert` 创建一个**新的提交**来撤销指定提交的改动，不会改写历史。
 
 ```bash
-
+# 撤销最近一次提交
 git revert HEAD
 
+# 撤销指定提交
+git revert <commit-hash>
 ```
 
-在我们要撤销的提交记录后面居然多了一个新提交！这是因为新提交记录 `C2'` 引入了**更改** —— 这些更改刚好是用来撤销 `C2` 这个提交的。也就是说 `C2'` 的状态与 `C1` 是相同的。
+**reset vs revert：**
 
-  
+| 特性 | reset | revert |
+|------|-------|--------|
+| 是否改写历史 | 是 | 否 |
+| 是否创建新提交 | 否 | 是 |
+| 适用场景 | 本地未推送的提交 | 已推送到远程的提交 |
+| 安全性 | 需谨慎 | 安全 |
 
-revert 之后就可以把你的更改推送到远程仓库与别人分享
+```
+使用 revert 后：
+
+原始：C1 ← C2 ← C3 (main)
+revert C2 后：C1 ← C2 ← C3 ← C2' (main)
+                              ↑
+                    C2' 的状态与 C1 相同
+```
+
+## 九、常用命令速查表
+
+### 日常开发
+
+| 场景 | 命令 |
+|------|------|
+| 查看状态 | `git status` |
+| 添加到暂存区 | `git add .` |
+| 提交 | `git commit -m "说明"` |
+| 推送 | `git push` |
+| 拉取最新代码 | `git pull` |
+| 查看历史 | `git log --oneline` |
+
+### 分支操作
+
+| 场景 | 命令 |
+|------|------|
+| 查看分支 | `git branch` |
+| 创建分支 | `git branch <name>` |
+| 切换分支 | `git switch <name>` |
+| 创建并切换 | `git switch -c <name>` |
+| 合并分支 | `git merge <name>` |
+| 删除分支 | `git branch -d <name>` |
+
+### 撤销操作
+
+| 场景 | 命令 |
+|------|------|
+| 撤销工作区改动 | `git checkout -- <file>` |
+| 取消暂存 | `git restore --staged <file>` |
+| 撤销上次提交（保留改动） | `git reset --soft HEAD~1` |
+| 彻底回退 | `git reset --hard HEAD~1` |
+| 安全撤销已推送的提交 | `git revert HEAD` |
+
+## 学习检查清单
+
+- [ ] 能配置 Git 用户名和邮箱
+- [ ] 理解工作区、暂存区、仓库的关系
+- [ ] 掌握 add、commit、push 的基本流程
+- [ ] 能创建、切换、合并分支
+- [ ] 理解 merge 和 rebase 的区别
+- [ ] 掌握 HEAD 和相对引用的用法
+- [ ] 理解 reset 和 revert 的区别与适用场景
