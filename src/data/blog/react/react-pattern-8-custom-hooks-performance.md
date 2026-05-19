@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 8：自定义 Hooks 与性能优化"
+title: React 进阶 Pattern 8：自定义 Hooks 与性能优化
 author: Aidenz
-pubDatetime: 2026-05-03T17:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-8-custom-hooks-performance
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: JavaScript 基础完全指南 - 从零开始让网页动起来
 author: Aidenz
-pubDatetime: 2026-05-02T07:00:00Z
+pubDatetime: 2026-04-02T07:00:00Z
 slug: js-basics-guide
 featured: false
 draft: false

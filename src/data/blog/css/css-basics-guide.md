@@ -1,7 +1,7 @@
 ---
 title: CSS 基础完全指南 - 从零开始美化网页
 author: Aidenz
-pubDatetime: 2026-05-02T06:00:00Z
+pubDatetime: 2026-04-02T06:00:00Z
 slug: css-basics-guide
 featured: false
 draft: false

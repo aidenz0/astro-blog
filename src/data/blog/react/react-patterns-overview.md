@@ -1,13 +1,12 @@
 ---
-title: "React 进阶系列：覆盖 95% 场景的 8 大核心模式"
+title: React 进阶系列：覆盖 95% 场景的 8 大核心模式
 author: Aidenz
-pubDatetime: 2026-05-03T09:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-patterns-overview
 featured: false
 draft: false
 tags:
   - React
-  - Next.js
   - 前端
   - 设计模式
 description: 8 个 React 核心模式的系列导览，涵盖 useState、useEffect、Props 组合、条件渲染、列表渲染、表单处理、Context API、自定义 Hooks，足以应对 95% 的日常开发场景。

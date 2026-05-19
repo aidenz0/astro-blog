@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 3：Props 与组件组合 - 构建可复用的组件"
+title: React 进阶 Pattern 3：Props 与组件组合 - 构建可复用的组件
 author: Aidenz
-pubDatetime: 2026-05-03T12:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-3-props-composition
 featured: false
 draft: false

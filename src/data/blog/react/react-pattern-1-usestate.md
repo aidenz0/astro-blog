@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 1：useState - 让组件拥有记忆"
+title: React 进阶 Pattern 1：useState - 让组件拥有记忆
 author: Aidenz
-pubDatetime: 2026-05-03T10:00:00Z
+pubDatetime: 2026-04-10T10:00:00Z
 slug: react-pattern-1-usestate
 featured: false
 draft: false

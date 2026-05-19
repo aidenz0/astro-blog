@@ -1,7 +1,7 @@
 ---
 title: Git 常用命令完全指南 - 从入门到进阶
 author: Aidenz
-pubDatetime: 2026-05-05T04:06:31Z
+pubDatetime: 2025-05-05T04:06:31Z
 slug: git-commands-guide
 featured: true
 draft: false

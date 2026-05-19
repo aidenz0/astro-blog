@@ -1,13 +1,12 @@
 ---
-title: "React 进阶 Pattern 7：Context API - 跨组件共享状态"
+title: React 进阶 Pattern 7：Context API - 跨组件共享状态
 author: Aidenz
-pubDatetime: 2026-05-03T16:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-7-context-api
 featured: false
 draft: false
 tags:
   - React
-  - Context API
   - Hooks
   - 前端
 description: 深入理解 React Context API，包括 createContext、Provider、useContext、自定义 Hook 封装，以及暗黑主题切换的完整实战。

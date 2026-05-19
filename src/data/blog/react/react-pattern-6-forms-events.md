@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 6：事件处理与表单 - 处理用户输入"
+title: React 进阶 Pattern 6：事件处理与表单 - 处理用户输入
 author: Aidenz
-pubDatetime: 2026-05-03T15:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-6-forms-events
 featured: false
 draft: false

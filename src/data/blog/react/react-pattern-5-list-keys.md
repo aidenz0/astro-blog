@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 5：列表渲染与 Key - 高效渲染一组数据"
+title: React 进阶 Pattern 5：列表渲染与 Key - 高效渲染一组数据
 author: Aidenz
-pubDatetime: 2026-05-03T14:00:00Z
+pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-5-list-keys
 featured: false
 draft: false

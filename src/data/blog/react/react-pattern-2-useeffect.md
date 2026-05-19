@@ -1,7 +1,7 @@
 ---
-title: "React 进阶 Pattern 2：useEffect - 让组件与外部世界交互"
+title: React 进阶 Pattern 2：useEffect - 让组件与外部世界交互
 author: Aidenz
-pubDatetime: 2026-05-03T11:00:00Z
+pubDatetime: 2026-04-10T11:00:00Z
 slug: react-pattern-2-useeffect
 featured: false
 draft: false
