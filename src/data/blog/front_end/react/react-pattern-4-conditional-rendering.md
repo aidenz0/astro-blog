@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-4-conditional-rendering
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 4
 tags:
   - React
   - 条件渲染

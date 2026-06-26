@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-3-props-composition
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 3
 tags:
   - React
   - Props

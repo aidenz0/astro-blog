@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T11:00:00Z
 slug: react-pattern-2-useeffect
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 2
 tags:
   - React
   - useEffect

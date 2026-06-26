@@ -1,0 +1,106 @@
+---
+import type { CollectionEntry } from "astro:content";
+import getPostsBySeries from "@/utils/getPostsBySeries";
+import { slugifyStr } from "@/utils/slugify";
+import { getPath } from "@/utils/getPath";
+import IconList from "@/assets/icons/IconList.svg";
+import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
+import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
+
+type Props = {
+  post: CollectionEntry<"blog">;
+  posts: CollectionEntry<"blog">[];
+};
+
+const { post, posts } = Astro.props;
+const seriesName = post.data.series;
+
+// 仅当文章属于某系列时才计算并渲染
+const info = (() => {
+  if (!seriesName) return null;
+  const series = slugifyStr(seriesName);
+  const siblings = getPostsBySeries(posts, series);
+  const index = siblings.findIndex(p => p.id === post.id);
+  if (index === -1) return null;
+  return {
+    series,
+    siblings,
+    index,
+    total: siblings.length,
+    prev: index > 0 ? siblings[index - 1] : null,
+    next: index < siblings.length - 1 ? siblings[index + 1] : null,
+  };
+})();
+---
+
+{
+  info && (
+    <aside
+      data-pagefind-ignore
+      class="my-6 rounded-lg border border-border bg-muted/40 p-4 text-sm"
+    >
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <IconList class="size-5 text-accent" />
+        <span class="text-foreground/75">本文属于系列</span>
+        <a
+          href={`/series/${info.series}/`}
+          class="font-semibold text-accent decoration-dashed underline-offset-4 hover:underline"
+        >
+          {seriesName}
+        </a>
+        <span class="text-foreground/75">
+          · 第 {info.index + 1} / {info.total} 篇
+        </span>
+      </div>
+
+      <details class="group mt-3">
+        <summary class="cursor-pointer text-foreground/75 hover:text-accent">
+          展开全部 {info.total} 篇
+        </summary>
+        <ol class="mt-2 ml-5 list-decimal space-y-1 marker:text-foreground/50">
+          {info.siblings.map((p, i) =>
+            i === info.index ? (
+              <li class="font-semibold text-accent">{p.data.title}</li>
+            ) : (
+              <li>
+                <a
+                  href={getPath(p.id, p.filePath)}
+                  class="decoration-dashed underline-offset-4 hover:text-accent hover:underline"
+                >
+                  {p.data.title}
+                </a>
+              </li>
+            )
+          )}
+        </ol>
+      </details>
+
+      {(info.prev || info.next) && (
+        <div class="mt-3 flex items-center justify-between gap-4 border-t border-border pt-3">
+          {info.prev ? (
+            <a
+              href={getPath(info.prev.id, info.prev.filePath)}
+              class="flex items-center gap-1 hover:text-accent"
+            >
+              <IconChevronLeft class="size-4" />
+              <span class="line-clamp-1">{info.prev.data.title}</span>
+            </a>
+          ) : (
+            <span />
+          )}
+          {info.next ? (
+            <a
+              href={getPath(info.next.id, info.next.filePath)}
+              class="flex items-center gap-1 text-right hover:text-accent"
+            >
+              <span class="line-clamp-1">{info.next.data.title}</span>
+              <IconChevronRight class="size-4" />
+            </a>
+          ) : (
+            <span />
+          )}
+        </div>
+      )}
+    </aside>
+  )
+}

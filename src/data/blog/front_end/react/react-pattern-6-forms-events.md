@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T12:00:00Z
 slug: react-pattern-6-forms-events
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 6
 tags:
   - React
   - 表单

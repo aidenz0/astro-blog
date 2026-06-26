@@ -4,6 +4,7 @@ import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Footer from "@/components/Footer.astro";
 import Tag from "@/components/Tag.astro";
+import SeriesNav from "@/components/SeriesNav.astro";
 import Datetime from "@/components/Datetime.astro";
 import ReadingTime from "@/components/ReadingTime.astro";
 import EditPost from "@/components/EditPost.astro";
@@ -122,6 +123,7 @@ const tocHeadings = headings?.filter(h => h.depth >= 2 && h.depth <= 4) ?? [];
           >
           <EditPost {hideEditPost} {post} class="max-sm:hidden" />
         </div>
+        <SeriesNav {post} {posts} />
         <article
           id="article"
           class="app-prose mt-8 w-full max-w-app prose-pre:bg-(--shiki-light-bg) dark:prose-pre:bg-(--shiki-dark-bg)"

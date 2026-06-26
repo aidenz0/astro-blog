@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T10:00:00Z
 slug: react-pattern-1-usestate
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 1
 tags:
   - React
   - useState

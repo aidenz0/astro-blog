@@ -5,6 +5,8 @@ pubDatetime: 2026-04-10T12:00:00Z
 slug: react-patterns-overview
 featured: false
 draft: false
+series: React 进阶 Pattern
+seriesOrder: 0
 tags:
   - React
   - 前端

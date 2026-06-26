@@ -1,0 +1,32 @@
+---
+import { getCollection } from "astro:content";
+import Main from "@/layouts/Main.astro";
+import Layout from "@/layouts/Layout.astro";
+import Series from "@/components/Series.astro";
+import Header from "@/components/Header.astro";
+import Footer from "@/components/Footer.astro";
+import getUniqueSeries from "@/utils/getUniqueSeries";
+import { SITE } from "@/config";
+
+const posts = await getCollection("blog");
+
+const series = getUniqueSeries(posts);
+---
+
+<Layout title={`Series | ${SITE.title}`}>
+  <Header />
+  <Main pageTitle="Series" pageDesc="All article series — read them in order.">
+    {
+      series.length > 0 ? (
+        <ul class="flex flex-wrap gap-6">
+          {series.map(props => (
+            <Series {...props} />
+          ))}
+        </ul>
+      ) : (
+        <p>暂无系列文章。给文章 frontmatter 加上 <code>series</code> 字段即可。</p>
+      )
+    }
+  </Main>
+  <Footer />
+</Layout>
