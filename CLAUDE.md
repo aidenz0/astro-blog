@@ -147,6 +147,6 @@ description: 文章描述摘要
 ### 用 Obsidian 写作
 
 推荐用 Obsidian 打开 `src/data/blog/` 作为 Vault 写作，工作流详见仓库根的 `OBSIDIAN.md`：
-- 用 Templater 模板（`src/data/blog/_templates/_new-post.md`）一键生成 frontmatter；
+- 用文章模板（`Templates/文章模板.md`，仓库根的 Obsidian 模板目录）快速生成 frontmatter；
 - 图片直接粘贴存到同目录，`![[...]]` 嵌入会在构建时自动转换；
 - 草稿用 `draft: true`（保留但不显示）或文件名加 `_` 前缀（loader 完全忽略）。
