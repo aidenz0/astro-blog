@@ -16,7 +16,7 @@ description: 一段 10 周的 LLM 实战之旅。本系列系统讲解大语言�
 
 ## 这是什么系列
 
-这是一个面向**应用落地**的大语言模型（LLM）系列，原素材取自开源课程 *Applied LLMs Mastery 2024*（作者 Aishwarya Naresh Reganti，MIT License），由本站翻译整理为中文。
+这是一个面向<strong>应用落地</strong>的大语言模型（LLM）系列，原素材取自开源课程 *Applied LLMs Mastery 2024*（作者 Aishwarya Naresh Reganti，MIT License），由本站翻译整理为中文。
 
 如果你已经被 LLM 相关的零散概念搞得有点晕——提示工程、微调、RAG、评估、Agent 各说各话，找不到一条从基础到实战的清晰路径——这个系列就是为你准备的。它不追求把数学讲深，而是把"用 LLM 做真实应用"这件事的每个环节串起来，让你既懂原理又知道怎么动手。
 
