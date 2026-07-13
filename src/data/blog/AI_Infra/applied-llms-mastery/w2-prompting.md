@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（三）：提示工程
 author: Aidenz
-pubDatetime: 2024-01-22T04:00:00Z
+pubDatetime: 2026-06-15T12:09:00Z
 slug: applied-llms-w2-prompting
 featured: false
 draft: false

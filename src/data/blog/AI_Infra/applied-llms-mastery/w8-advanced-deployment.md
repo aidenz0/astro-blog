@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（九）：高级特性与部署
 author: Aidenz
-pubDatetime: 2024-03-04T04:00:00Z
+pubDatetime: 2026-06-15T12:03:00Z
 slug: applied-llms-w8-advanced-deployment
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（五）：检索增强生成 RAG
 author: Aidenz
-pubDatetime: 2024-02-05T04:00:00Z
+pubDatetime: 2026-06-15T12:07:00Z
 slug: applied-llms-w4-rag
 featured: false
 draft: false

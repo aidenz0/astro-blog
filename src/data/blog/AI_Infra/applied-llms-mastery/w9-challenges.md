@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（十）：大模型面临的挑战
 author: Aidenz
-pubDatetime: 2024-03-11T04:00:00Z
+pubDatetime: 2026-06-15T12:02:00Z
 slug: applied-llms-w9-challenges
 featured: false
 draft: false

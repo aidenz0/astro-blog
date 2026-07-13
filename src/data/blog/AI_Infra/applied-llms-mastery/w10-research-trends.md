@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（十一）：新兴研究趋势
 author: Aidenz
-pubDatetime: 2024-03-18T04:00:00Z
+pubDatetime: 2026-06-15T12:01:00Z
 slug: applied-llms-w10-research-trends
 featured: false
 draft: false

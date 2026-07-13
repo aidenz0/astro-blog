@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（一）：LLM 基础与真实世界用例
 author: Aidenz
-pubDatetime: 2024-01-15T04:00:00Z
+pubDatetime: 2026-06-15T12:11:00Z
 slug: applied-llms-w1p1-foundations
 featured: false
 draft: false

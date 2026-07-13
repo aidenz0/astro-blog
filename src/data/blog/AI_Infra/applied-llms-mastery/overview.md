@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通：系列总览
 author: Aidenz
-pubDatetime: 2024-01-14T04:00:00Z
+pubDatetime: 2026-06-15T12:12:00Z
 slug: applied-llms-mastery-overview
 featured: true
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（番外）：LLM 架构基础
 author: Aidenz
-pubDatetime: 2024-03-25T04:00:00Z
+pubDatetime: 2026-06-15T12:00:00Z
 slug: applied-llms-w11-architecture
 featured: false
 draft: false

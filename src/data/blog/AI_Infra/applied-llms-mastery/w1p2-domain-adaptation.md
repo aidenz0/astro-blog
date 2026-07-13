@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（二）：领域与任务自适应方法
 author: Aidenz
-pubDatetime: 2024-01-16T04:00:00Z
+pubDatetime: 2026-06-15T12:10:00Z
 slug: applied-llms-w1p2-domain-adaptation
 featured: false
 draft: false

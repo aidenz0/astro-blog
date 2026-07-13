@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（六）：构建 LLM 应用的工具生态
 author: Aidenz
-pubDatetime: 2024-02-12T04:00:00Z
+pubDatetime: 2026-06-15T12:06:00Z
 slug: applied-llms-w5-tools
 featured: false
 draft: false

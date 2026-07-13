@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（八）：动手构建你的 LLM 应用
 author: Aidenz
-pubDatetime: 2024-02-26T04:00:00Z
+pubDatetime: 2026-06-15T12:04:00Z
 slug: applied-llms-w7-build-app
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（四）：微调大模型
 author: Aidenz
-pubDatetime: 2024-01-29T04:00:00Z
+pubDatetime: 2026-06-15T12:08:00Z
 slug: applied-llms-w3-finetuning
 featured: false
 draft: false

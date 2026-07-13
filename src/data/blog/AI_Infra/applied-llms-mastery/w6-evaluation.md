@@ -1,7 +1,7 @@
 ---
 title: LLM 应用实战精通（七）：LLM 评估技术
 author: Aidenz
-pubDatetime: 2024-02-19T04:00:00Z
+pubDatetime: 2026-06-15T12:05:00Z
 slug: applied-llms-w6-evaluation
 featured: false
 draft: false
