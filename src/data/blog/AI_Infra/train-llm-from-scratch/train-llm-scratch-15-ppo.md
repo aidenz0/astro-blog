@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十五）：PPO 完整推导"
 author: Aidenz
-pubDatetime: 2026-07-13T12:03:00Z
+pubDatetime: 2026-07-13T08:03:00Z
 slug: train-llm-scratch-15-ppo
 featured: false
 draft: false

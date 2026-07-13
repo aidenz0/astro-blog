@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（七）：训练目标——交叉熵与困惑度"
 author: Aidenz
-pubDatetime: 2026-07-13T12:11:00Z
+pubDatetime: 2026-07-13T08:11:00Z
 slug: train-llm-scratch-07-objectives
 featured: false
 draft: false

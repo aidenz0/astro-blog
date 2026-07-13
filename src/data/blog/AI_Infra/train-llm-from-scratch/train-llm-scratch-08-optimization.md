@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（八）：优化与训练系统"
 author: Aidenz
-pubDatetime: 2026-07-13T12:10:00Z
+pubDatetime: 2026-07-13T08:10:00Z
 slug: train-llm-scratch-08-optimization
 featured: false
 draft: false

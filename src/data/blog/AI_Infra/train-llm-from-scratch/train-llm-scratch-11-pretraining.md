@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十一）：预训练你的基座模型"
 author: Aidenz
-pubDatetime: 2026-07-13T12:07:00Z
+pubDatetime: 2026-07-13T08:07:00Z
 slug: train-llm-scratch-11-pretraining
 featured: false
 draft: false

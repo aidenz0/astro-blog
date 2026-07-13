@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（六）：注意力机制完整推导"
 author: Aidenz
-pubDatetime: 2026-07-13T12:12:00Z
+pubDatetime: 2026-07-13T08:12:00Z
 slug: train-llm-scratch-06-attention
 featured: false
 draft: false

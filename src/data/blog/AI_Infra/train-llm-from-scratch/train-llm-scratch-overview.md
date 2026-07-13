@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（序）：课程总览"
 author: Aidenz
-pubDatetime: 2026-07-13T12:18:00Z
+pubDatetime: 2026-07-13T08:18:00Z
 slug: train-llm-scratch-overview
 featured: true
 draft: false

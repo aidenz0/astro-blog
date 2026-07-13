@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（二）：数学与机器学习最小基础"
 author: Aidenz
-pubDatetime: 2026-07-13T12:16:00Z
+pubDatetime: 2026-07-13T08:16:00Z
 slug: train-llm-scratch-02-math-ml-basics
 featured: false
 draft: false

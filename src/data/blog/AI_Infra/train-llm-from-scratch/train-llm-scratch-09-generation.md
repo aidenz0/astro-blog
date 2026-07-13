@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（九）：生成与采样"
 author: Aidenz
-pubDatetime: 2026-07-13T12:09:00Z
+pubDatetime: 2026-07-13T08:09:00Z
 slug: train-llm-scratch-09-generation
 featured: false
 draft: false

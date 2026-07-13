@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（五）：解码器 Transformer 骨架"
 author: Aidenz
-pubDatetime: 2026-07-13T12:13:00Z
+pubDatetime: 2026-07-13T08:13:00Z
 slug: train-llm-scratch-05-transformer
 featured: false
 draft: false

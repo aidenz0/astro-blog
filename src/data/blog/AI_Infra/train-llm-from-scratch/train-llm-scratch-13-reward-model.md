@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十三）：奖励模型与 Bradley-Terry 推导"
 author: Aidenz
-pubDatetime: 2026-07-13T12:05:00Z
+pubDatetime: 2026-07-13T08:05:00Z
 slug: train-llm-scratch-13-reward-model
 featured: false
 draft: false

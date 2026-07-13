@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十）：数据流水线——从 The Pile 到 HDF5"
 author: Aidenz
-pubDatetime: 2026-07-13T12:08:00Z
+pubDatetime: 2026-07-13T08:08:00Z
 slug: train-llm-scratch-10-data-pipeline
 featured: false
 draft: false

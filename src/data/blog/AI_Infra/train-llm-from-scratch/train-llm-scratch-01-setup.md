@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（一）：环境搭建与第一次运行"
 author: Aidenz
-pubDatetime: 2026-07-13T12:17:00Z
+pubDatetime: 2026-07-13T08:17:00Z
 slug: train-llm-scratch-01-setup
 featured: false
 draft: false

@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十七）：评估（GSM8K）与推理对话"
 author: Aidenz
-pubDatetime: 2026-07-13T12:01:00Z
+pubDatetime: 2026-07-13T08:01:00Z
 slug: train-llm-scratch-17-eval-inference
 featured: false
 draft: false

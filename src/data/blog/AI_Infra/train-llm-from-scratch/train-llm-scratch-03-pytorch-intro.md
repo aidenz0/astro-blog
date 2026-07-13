@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（三）：PyTorch 极简入门"
 author: Aidenz
-pubDatetime: 2026-07-13T12:15:00Z
+pubDatetime: 2026-07-13T08:15:00Z
 slug: train-llm-scratch-03-pytorch-intro
 featured: false
 draft: false

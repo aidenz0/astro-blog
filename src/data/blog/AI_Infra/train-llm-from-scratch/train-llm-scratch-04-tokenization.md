@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（四）：文本如何变成数字——分词与数据形状"
 author: Aidenz
-pubDatetime: 2026-07-13T12:14:00Z
+pubDatetime: 2026-07-13T08:14:00Z
 slug: train-llm-scratch-04-tokenization
 featured: false
 draft: false

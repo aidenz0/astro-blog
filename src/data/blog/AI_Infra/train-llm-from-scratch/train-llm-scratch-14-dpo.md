@@ -1,7 +1,7 @@
 ---
 title: "从零训练大模型（十四）：DPO 直接偏好优化"
 author: Aidenz
-pubDatetime: 2026-07-13T12:04:00Z
+pubDatetime: 2026-07-13T08:04:00Z
 slug: train-llm-scratch-14-dpo
 featured: false
 draft: false
