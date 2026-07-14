@@ -21,7 +21,6 @@ html[data-theme="dark"] {
   --border: #86436b;
 }
 
-
 @theme inline {
   --font-app: var(--font-google-sans-code);
   --color-background: var(--background);
@@ -73,4 +72,25 @@ html[data-theme="dark"] {
 /* Anything that has been anchored to should have extra scroll margin */
 :target {
   scroll-margin-block: 1rem;
+}
+
+/* Mermaid diagrams: strip code-block styling, center the rendered SVG.
+   Before JS renders (or on failure), the fallback <code> source stays visible. */
+.mermaid {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 1.5rem auto;
+  text-align: center;
+  overflow-x: auto;
+}
+.mermaid > code {
+  display: block;
+  white-space: pre;
+  text-align: left;
+  font-size: 0.8em;
+  opacity: 0.6;
+}
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
 }

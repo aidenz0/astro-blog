@@ -3,6 +3,7 @@ import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import remarkToc from "remark-toc";
 import remarkObsidianImages from "./src/utils/remark/remarkObsidianImages";
+import remarkMermaid from "./src/utils/remark/remarkMermaid";
 import remarkCollapse from "remark-collapse";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
@@ -25,6 +26,7 @@ export default defineConfig({
   markdown: {
     remarkPlugins: [
       remarkObsidianImages,
+      remarkMermaid,
       remarkMath,
       remarkToc,
       [remarkCollapse, { test: "Table of contents" }],
