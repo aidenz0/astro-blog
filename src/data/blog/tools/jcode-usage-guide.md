@@ -3,7 +3,7 @@ title: Jcode 使用指南：最大化主动的编程 Agent
 author: Aidenz
 pubDatetime: 2026-07-21T07:45:00Z
 slug: jcode-usage-guide
-featured: true
+featured: false
 draft: false
 tags:
   - Jcode
