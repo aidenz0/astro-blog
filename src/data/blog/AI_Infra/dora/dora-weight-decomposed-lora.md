@@ -102,19 +102,70 @@ $$W' = \frac{m \cdot (V + \Delta V)}{\|V + \Delta V\|_c} = \frac{m \cdot (W_0 + 
 
 ### 3.3 梯度分析
 
-对损失 $L$，关于 $m$ 和 $V' = V + \Delta V$ 的梯度为：
+DoRA 的权重更新公式为：
 
-$$\nabla_{V'} L = \frac{m}{\|V'\|_c} \left( I - \frac{V' V'^T}{\|V'\|_c^2} \right) \nabla_{W'} L$$
+$$W' = \frac{m \cdot V'}{\|V'\|_c}, \quad V' = V + \Delta V$$
 
-$$\nabla_m L = \nabla_{W'} L \cdot \frac{V'}{\|V'\|_c}$$
+对损失 $\mathcal{L}$，需要计算关于可训练参数 $m$ 和 $V'$ 的梯度。
 
-**梯度分析的意义**：
+#### $\nabla_m \mathcal{L}$：幅度梯度的推导
 
-- 权重梯度 $\nabla_{W'} L$ 被 $m/\|V'\|_c$ 缩放，并被投影到远离当前权重矩阵的方向
-- 这两个效应使梯度协方差矩阵更接近单位矩阵，**有利于优化** [Salimans & Kingma, 2016]
-- 分解带来的优化优势完全传递给 $\Delta V$，**增强了 LoRA 的学习稳定性**
+由链式法则，$\mathcal{L}$ 对 $m$ 的梯度为：
 
-**负斜率模式的理论解释**：当方向更新较小时（$\Delta D_{S1}$），梯度与当前权重的夹角更小，导致幅度梯度 $|\nabla_{m^*} L|$ 更大，即幅度更新更大。反之方向更新较大时，幅度更新较小。这正是 FT 和 DoRA 呈现负斜率模式的数学根源。
+$$\nabla_m \mathcal{L} = \nabla_{W'} \mathcal{L} \cdot \frac{\partial W'}{\partial m} = \nabla_{W'} \mathcal{L} \cdot \frac{V'}{\|V'\|_c}$$
+
+注意 $V' / \|V'\|_c$ 正是归一化后的方向矩阵（每列为单位向量）。因此幅度梯度等于权重梯度在方向上的投影：
+
+$$\boxed{\nabla_m \mathcal{L} = \nabla_{W'} \mathcal{L} \cdot \frac{V'}{\|V'\|_c}}$$
+
+#### $\nabla_{V'} \mathcal{L}$：方向梯度的推导
+
+由 $W' = m \cdot V' / \|V'\|_c$，对 $V'$ 的第 $i$ 列 $v'_i$（对应幅度 $m_i$）：
+
+$$W'_i = m_i \cdot \frac{v'_i}{\|v'_i\|}$$
+
+对 $v'_i$ 求导（利用 $\frac{\partial}{\partial v} \frac{v}{\|v\|} = \frac{I}{\|v\|} - \frac{v v^T}{\|v\|^3}$）：
+
+$$\frac{\partial W'_i}{\partial v'_i} = m_i \left( \frac{I}{\|v'_i\|} - \frac{v'_i v_i'^T}{\|v'_i\|^3} \right) = \frac{m_i}{\|v'_i\|} \left( I - \frac{v'_i v_i'^T}{\|v'_i\|^2} \right)$$
+
+推广到全矩阵形式（按列独立处理）：
+
+$$\boxed{\nabla_{V'} \mathcal{L} = \frac{m}{\|V'\|_c} \left( I - \frac{V' V'^T}{\|V'\|_c^2} \right) \nabla_{W'} \mathcal{L}}$$
+
+> 投影矩阵 $P = I - \frac{V' V'^T}{\|V'\|_c^2}$ 的含义：$P$ 将梯度投影到与当前权重方向正交的子空间，即"远离当前权重"的方向。
+
+#### 梯度分析的意义
+
+| 效应 | 公式体现 | 影响 |
+|------|---------|------|
+| **缩放效应** | $m / \|V'\|_c$ 因子 | 控制梯度的整体大小，使不同层/列的梯度尺度更均匀 |
+| **投影效应** | $(I - V'V'^T/\|V'\|_c^2)$ 因子 | 将梯度投影到正交子空间，避免梯度与当前权重方向重合 |
+| **综合效果** | 两者叠加 | 梯度协方差矩阵更接近单位矩阵 $I$，**有利于优化** [Salimans & Kingma, 2016] |
+
+由于 $V' = V + \Delta V$，$\nabla_{V'} \mathcal{L}$ 等价于 $\nabla_{\Delta V} \mathcal{L}$，因此分解带来的优化优势完全传递给 LoRA 的低秩更新 $\Delta V = BA$，**增强了 LoRA 的学习稳定性**。
+
+#### 负斜率模式的理论推导
+
+论文从 $\nabla_m \mathcal{L}$ 出发，严格推导了 DoRA 呈现负斜率模式的原因：
+
+**设定**：考虑两个更新场景 $S1$ 和 $S2$，方向变化 $\Delta D_{S1} < \Delta D_{S2}$，但权重更新幅度相同 $\|\Delta w_{S1}\| = \|\Delta w_{S2}\|$。在 $t=0$ 时 $\Delta v = 0$，$v' = v$。
+
+**步骤 1**：由 $\Delta D_{S1} < \Delta D_{S2}$ 得方向更新更小的 $S1$，其梯度与当前权重夹角更小：
+
+$$|\cos(\Delta w_{S1}, w')| > |\cos(\Delta w_{S2}, w')|$$
+
+**步骤 2**：由 $\Delta w \propto \nabla_{w'} \mathcal{L}$ 得：
+
+$$|\cos(\nabla_{w'}^{S1} \mathcal{L}, v)| > |\cos(\nabla_{w'}^{S2} \mathcal{L}, v)|$$
+
+**步骤 3**：由式 $\nabla_{m^*} \mathcal{L} = \|\nabla_{w'} \mathcal{L}\| \cdot \cos(\nabla_{w'} \mathcal{L}, v)$（将矩阵形式退化为向量形式），且 $\|\nabla_{w'}^{S1} \mathcal{L}\| = \|\nabla_{w'}^{S2} \mathcal{L}\|$（因 $\|\Delta w\|$ 相同），得：
+
+$$\boxed{|\nabla_{m^*}^{S1} \mathcal{L}| > |\nabla_{m^*}^{S2} \mathcal{L}|}$$
+
+**结论**：方向更新较小时（$S1$），幅度梯度更大，即幅度更新更大；方向更新较大时（$S2$），幅度更新更小。这**恰好是负斜率模式**——方向变化与幅度变化呈反比，与 FT 的学习模式一致（相关系数 -0.62），而 LoRA 为正比例更新（+0.83）。
+
+> [!note] 向量形式 vs 矩阵形式
+> 论文在负斜率推导中，将矩阵形式退化为向量形式（用小写字母表示），即对单个列向量 $w'$ 进行分析。这是合理的简化，因为 DoRA 的按列分解使每列独立优化，矩阵层面的结论可从列向量层面推广。
 
 ## 4. 训练开销优化
 
