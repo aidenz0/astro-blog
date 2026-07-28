@@ -12,8 +12,9 @@ tags:
   - Scaling Laws
   - 训练
   - 推理
+  - LoRA
   - GPU
-description: 系统梳理大模型训练与推理所需算力的计算方法，涵盖训练 FLOPs 估算（6PD 公式）、训练显存需求、GPU 利用率与训练时间换算、Chinchilla Scaling Laws，以及推理算力（2P/token）、KV Cache 显存、Prefill/Decode 两阶段延迟、memory-bound 与 compute-bound 分析、推理优化技术，并配以 LLaMA-7B/70B 等实例计算。
+description: 系统梳理大模型训练与推理所需算力的计算方法，涵盖全量训练 FLOPs 估算（6PD 公式）、训练显存需求、GPU 利用率与训练时间换算、Chinchilla Scaling Laws、LoRA/QLoRA 微调算力与显存、推理算力（2P/token）、KV Cache 显存、Prefill/Decode 两阶段延迟、memory-bound 与 compute-bound 分析、推理优化技术，并配以 LLaMA-7B/70B 等实例计算。
 ---
 
 > 本文整理自 OpenAI Scaling Laws（Kaplan et al., 2020）、DeepMind Chinchilla Scaling Laws（Hoffmann et al., 2022）、EleutherAI Transformer Math 101、Epoch AI 的训练算力估算方法、以及 Kipply 的 Transformer Inference Arithmetic 等资料，力求给出一套自洽且可操作的大模型训练与推理算力计算框架。
@@ -297,11 +298,126 @@ $$\text{Per-GPU} \approx \frac{1102 \text{ GB}}{32} + \text{Activations}/8 + \te
 
 这在 H100 80GB 内是可行的。
 
-## 7. 推理算力估算
+## 7. LoRA 微调的算力计算
+
+LoRA（Low-Rank Adaptation）是最常用的参数高效微调（PEFT）方法。它通过低秩矩阵 $BA$ 来近似权重更新 $\Delta W$，冻结预训练权重 $W_0$，仅训练少量低秩参数，在几乎不损失性能的前提下大幅降低显存需求。
+
+$$W' = W_0 + \Delta W = W_0 + BA \quad (r \ll \min(d, k))$$
+
+### 7.1 LoRA 可训练参数量
+
+对于每个目标权重矩阵 $W \in \mathbb{R}^{d \times k}$，LoRA 引入两个低秩矩阵：
+
+- $B \in \mathbb{R}^{d \times r}$，$A \in \mathbb{R}^{r \times k}$
+- 每个矩阵增加参数量：$r \times d + r \times k = r(d + k)$
+- 当 $d = k = d_{\text{model}}$ 时，约为 $2rd_{\text{model}}$
+
+**常见 LoRA 目标模块配置**（以 LLaMA-7B 为例，$d_{\text{model}} = 4096$, $n_{\text{layers}} = 32$）：
+
+| 配置 | 目标模块 | 每层矩阵数 | $r=8$ 参数量 | $r=16$ 参数量 | 占总参数比 |
+|------|---------|-----------|------------|------------|----------|
+| Q+V | 注意力 Q, V | 2 | 4.2M | 8.4M | 0.06% / 0.12% |
+| QKV | 注意力 Q, K, V | 3 | 6.3M | 12.6M | 0.09% / 0.19% |
+| All Attention | Q, K, V, O | 4 | 8.4M | 16.8M | 0.12% / 0.25% |
+| All Linear | Q, K, V, O, W1, W2 | 6 | 16.8M | 33.6M | 0.25% / 0.50% |
+
+> $P_{\text{LoRA}} = 2r \times d_{\text{model}} \times n_{\text{modules}} \times n_{\text{layers}}$，其中 $n_{\text{modules}}$ 为每层应用 LoRA 的矩阵数量。MLP 的 $W_1 \in \mathbb{R}^{4d \times d}$ 和 $W_2 \in \mathbb{R}^{d \times 4d}$ 参数量为 $r \times 5d$ 每个。
+
+### 7.2 LoRA 训练 FLOPs
+
+LoRA 微调的计算量与全量微调的差异在于反向传播：
+
+| 阶段 | 全量微调 | LoRA 微调 | 说明 |
+|------|---------|----------|------|
+| 前向 | $2PD$ | $\approx 2PD$ | 仍需计算 $W_0 x$，LoRA 路径 $BAx$ 计算量仅 $2P_{\text{LoRA}}D$（可忽略） |
+| 反向（输入梯度） | $2PD$ | $2PD$ | 仍需通过 $W_0^T$ 反传梯度到上一层 |
+| 反向（权重梯度） | $2PD$ | $\approx 4P_{\text{LoRA}}D$ | 仅计算 $B$ 和 $A$ 的梯度，$W_0$ 冻结 |
+| **总计** | $\mathbf{6PD}$ | $\approx \mathbf{4PD}$ | **LoRA 约为全量微调的 2/3** |
+
+$$C_{\text{LoRA}} \approx 4PD + 4P_{\text{LoRA}}D \approx 4PD \quad (P_{\text{LoRA}} \ll P)$$
+
+> **关键洞察**：LoRA 的计算量节省并不显著（约 33%），因为前向和输入梯度反传仍需经过完整的 $W_0$。LoRA 的真正优势在于**显存**：无需为 $P$ 个参数存储优化器状态和梯度，只需为 $P_{\text{LoRA}}$ 存储。
+
+### 7.3 LoRA 训练显存
+
+LoRA 微调的显存组成与全量微调截然不同：
+
+$$\text{Total}_{\text{LoRA}} = \underbrace{2P}_{\substack{\text{冻结权重}\\\text{(FP16)}}} + \underbrace{16P_{\text{LoRA}}}_{\substack{\text{LoRA 参数+优化器+梯度}\\\text{(混合精度+AdamW)}}} + \underbrace{\text{Activations}}_{\text{激活值}}$$
+
+各部分对比（LLaMA-7B，$P = 6.74B$，$r=8$，QKV 配置，$P_{\text{LoRA}} = 6.3M$）：
+
+| 组成 | 全量微调 | LoRA 微调 | 倍率 |
+|------|---------|----------|------|
+| 模型权重（FP16） | 14 GB | 14 GB（冻结） | 1× |
+| FP32 权重副本 | 28 GB | 0.025 GB | — |
+| 优化器状态（AdamW） | 84 GB | 0.075 GB | 1120×↓ |
+| 梯度（FP16） | 14 GB | 0.013 GB | 1077×↓ |
+| **小计（不含激活值）** | **140 GB** | **~14.1 GB** | **10×↓** |
+| 激活值 | 同等 | 同等 | 1× |
+| **总计** | **$\approx 16P$** | **$\approx 2P + 16P_{\text{LoRA}}$** | — |
+
+$$\text{Total}_{\text{LoRA}} \approx 2P + 16P_{\text{LoRA}} + \text{Activations}$$
+
+**LLaMA-7B LoRA 显存**（$P = 6.74B$, $P_{\text{LoRA}} = 6.3M$）：
+
+$$2 \times 6.74 + 16 \times 0.0063 \approx 13.5 + 0.1 \approx 13.6 \text{ GB} + \text{Activations}$$
+
+加上激活值（约 2-6 GB），总计约 16-20 GB，**单张 A100 80GB 绰绰有余**，甚至 RTX 4090 24GB 也可行。
+
+### 7.4 QLoRA：量化 + LoRA
+
+QLoRA 将冻结的预训练权重量化为 4-bit（NF4），进一步压缩显存：
+
+$$\text{Total}_{\text{QLoRA}} \approx \underbrace{0.5P}_{\substack{\text{4-bit 权重}\\\text{(NF4)}}} + \underbrace{16P_{\text{LoRA}}}_{\text{LoRA 全精度}} + \underbrace{\text{Activations}}_{\text{激活值}}$$
+
+| 模型 | 全量微调 | LoRA (FP16) | QLoRA (4-bit) |
+|------|---------|-------------|-------------|
+| LLaMA-7B | ~108 GB | ~14 GB | ~5 GB |
+| LLaMA-13B | ~208 GB | ~26 GB | ~9 GB |
+| LLaMA-70B | ~1102 GB | ~140 GB | ~40 GB |
+
+> **QLoRA 的价值**：使得在单张消费级 GPU（如 RTX 4090 24GB）上微调 70B 模型成为可能。详见 [DoRA 博客](../dora/dora-weight-decomposed-lora) 中关于 QDoRA 的讨论。
+
+### 7.5 实例：LLaMA-7B LoRA 微调
+
+**配置**：$r=16$，All Attention（Q,K,V,O），$P_{\text{LoRA}} = 16.8M$，训练数据 100K tokens
+
+**Step 1: 计算训练 FLOPs**
+
+$$C_{\text{LoRA}} = 4 \times 6.74 \times 10^9 \times 10^5 = 2.7 \times 10^{15} \text{ FLOP}$$
+
+对比全量微调：$C_{\text{FT}} = 6 \times 6.74 \times 10^9 \times 10^5 = 4.04 \times 10^{15}$ FLOP（LoRA 节省 33%）
+
+**Step 2: 估算训练时间**（单卡 A100，MFU ≈ 0.35）
+
+$$T_{\text{LoRA}} = \frac{2.7 \times 10^{15}}{312 \times 10^{12} \times 0.35} \approx 25 \text{ 秒}$$
+
+**Step 3: 估算显存**
+
+$$\text{Total} \approx 2 \times 6.74 + 16 \times 0.0168 + \text{Activations} \approx 13.5 + 0.27 + \text{Activations} \approx 16 \text{ GB}$$
+
+单卡 A100 80GB 完全可行，甚至 RTX 3090 24GB 也能跑。
+
+### 7.6 LoRA vs 全量微调对比
+
+| 维度 | 全量微调 | LoRA | QLoRA |
+|------|---------|------|-------|
+| 可训练参数 | $P$（100%） | $P_{\text{LoRA}}$（0.1-1%） | $P_{\text{LoRA}}$（0.1-1%） |
+| 训练 FLOPs | $6PD$ | $\approx 4PD$（-33%） | $\approx 4PD$（-33%） |
+| 训练显存 | $\approx 16P$ | $\approx 2P + 16P_{\text{LoRA}}$ | $\approx 0.5P + 16P_{\text{LoRA}}$ |
+| 7B 显存 | ~108 GB | ~14 GB | ~5 GB |
+| 70B 显存 | ~1102 GB | ~140 GB | ~40 GB |
+| 推理开销 | 零（权重已更新） | 零（可合并 $BA$ 到 $W_0$） | 零（可合并） |
+| 精度损失 | 基准 | 极小（<1%） | 小（1-2%） |
+| 所需 GPU | 多卡集群 | 单卡 | 单卡消费级 |
+
+> **推理零开销**：LoRA 训练完成后，可将 $BA$ 合并回 $W_0$（$W' = W_0 + BA$），推理时与原始模型完全相同，无额外计算或显存开销。这是 LoRA 相比 Adapter/Prompt Tuning 的重要优势。
+
+## 8. 推理算力估算
 
 训练和推理的算力计算有显著差异。训练是 batch 处理大量 token（前向 + 反向），而推理是逐 token 自回归生成（仅前向）。推理的核心挑战不在于总算力，而在于**延迟**和**吞吐量**的权衡。
 
-### 7.1 推理的两阶段：Prefill 与 Decode
+### 8.1 推理的两阶段：Prefill 与 Decode
 
 LLM 推理分为两个截然不同的阶段：
 
@@ -312,7 +428,7 @@ LLM 推理分为两个截然不同的阶段：
 
 > **关键区别**：Prefill 阶段一次处理 $s$ 个 token，计算量为 $2Ps$，可充分利用 GPU 算力。Decode 阶段每步只处理 1 个 token，计算量为 $2P$，但需从显存加载全部权重 $2P$ bytes（FP16），因此受限于内存带宽而非算力。
 
-### 7.2 推理 FLOPs：每 token 2P
+### 8.2 推理 FLOPs：每 token 2P
 
 每个 token 的前向传播 FLOPs 约为 $2P$（仅前向，无反向）：
 
@@ -331,7 +447,7 @@ $$C_{\text{per token}} \approx 2P$$
 
 > 注意力分数计算（$q \cdot k$、softmax、$\text{softmax} \cdot v$）是向量-向量运算，FLOPs 仅为 $O(d)$ 量级，相比矩阵乘法的 $O(d^2)$ 可忽略。
 
-### 7.3 推理显存：权重 + KV Cache
+### 8.3 推理显存：权重 + KV Cache
 
 推理所需显存远小于训练，无需优化器状态和梯度：
 
@@ -388,7 +504,7 @@ $$\text{KV Cache} = 2.5 \text{ MB} \times 4096 \times 32 \approx 327 \text{ GB}$
 
 > 单张 A100 80GB 可跑 FP16 的 7B 模型，但 70B 需要 2-4 张或量化为 INT4。
 
-### 7.4 Memory-bound 与 Compute-bound
+### 8.4 Memory-bound 与 Compute-bound
 
 推理性能的关键在于判断是**内存带宽受限**还是**计算能力受限**。这取决于一个核心比值：
 
@@ -409,7 +525,7 @@ $$R = \frac{\text{GPU FLOPS}}{\text{GPU Memory Bandwidth}}$$
 
 > **核心洞察**：在低并发（如单用户请求）下，推理是 memory-bound 的。增加 batch size 可以将多个请求的权重加载"摊薄"，提升算力利用率，但会增加延迟。
 
-### 7.5 延迟计算公式
+### 8.5 延迟计算公式
 
 #### Decode 阶段：单 token 生成延迟
 
@@ -449,7 +565,7 @@ $$t_{\text{decode}} = \frac{2 \times 6.74 \times 10^9 \times 256}{312 \times 10^
 
 > 对比可见，从 batch=1 到 batch=256，单 token 延迟从 9ms 增至 11ms（仅增 22%），但吞吐提升了约 200 倍。这就是 batch 推理的价值。
 
-### 7.6 推理吞吐量
+### 8.6 推理吞吐量
 
 **单卡吞吐量**（tokens/s）：
 
@@ -461,7 +577,7 @@ $$\text{Throughput} = \frac{b}{t_{\text{decode}}} \approx \begin{cases} \frac{b 
 - compute-bound 区域：吞吐量达到上限，不再随 batch size 增长
 - 最优 batch size 在临界点 $b \approx R$ 附近
 
-### 7.7 推理优化技术
+### 8.7 推理优化技术
 
 | 技术 | 原理 | 效果 | 适用场景 |
 |------|------|------|---------|
@@ -475,7 +591,7 @@ $$\text{Throughput} = \frac{b}{t_{\text{decode}}} \approx \begin{cases} \frac{b 
 
 > **Continuous Batching** 是现代推理引擎（vLLM、TGI）的核心技术。不同于静态 batching 需等所有请求完成才能释放资源，continuous batching 在每个 token 生成步动态插入/移除请求，使 GPU 始终保持高 batch size。
 
-### 7.8 完整推理估算实例：LLaMA-2-70B on 4×A100
+### 8.8 完整推理估算实例：LLaMA-2-70B on 4×A100
 
 **模型参数**：$P = 68.9 \times 10^9$，FP16，$n_{\text{layers}} = 80$，$d_{\text{model}} = 8192$
 
@@ -505,15 +621,18 @@ $$t_{\text{prefill}} = \frac{2 \times 68.9 \times 10^9 \times 512}{1248 \times 1
 
 生成 256 tokens 的请求：$t_{\text{prefill}} + 256 \times t_{\text{decode}} = 0.057 + 256 \times 0.023 \approx 5.9 \text{ s}$
 
-## 8. 实用速查表
+## 9. 实用速查表
 
-### 8.1 快速估算公式
+### 9.1 快速估算公式
 
 | 目标 | 公式 |
 |------|------|
 | 训练总算力 | $C = 6PD$ FLOP |
 | 训练时间 | $T = \frac{6PD}{N \times \text{FLOPS} \times \text{MFU}}$ |
 | 训练显存（混合精度+AdamW） | $\approx 16P + \text{Activations}$ |
+| LoRA 微调算力 | $\approx 4PD$ FLOP（$P_{\text{LoRA}} \ll P$） |
+| LoRA 训练显存 | $\approx 2P + 16P_{\text{LoRA}} + \text{Activations}$ |
+| QLoRA 训练显存 | $\approx 0.5P + 16P_{\text{LoRA}} + \text{Activations}$ |
 | 推理每 token 算力 | $2P$ FLOP |
 | 推理显存（FP16） | $\approx 2P + \text{KV Cache}$ |
 | KV Cache 显存 | $4 \times n_L \times d \times s \times b$ bytes |
@@ -523,7 +642,7 @@ $$t_{\text{prefill}} = \frac{2 \times 68.9 \times 10^9 \times 512}{1248 \times 1
 | 最优推理 batch | $\approx R = \frac{\text{FLOPS}}{\text{Bandwidth}}$ |
 | Chinchilla 最优数据量 | $D = 20P$ |
 
-### 8.2 常见模型算力
+### 9.2 常见模型算力
 
 | 模型 | 参数 | 数据 | 训练算力（PetaFLOP-day） | GPU 估算 |
 |------|------|------|----------------------|---------|
@@ -534,7 +653,7 @@ $$t_{\text{prefill}} = \frac{2 \times 68.9 \times 10^9 \times 512}{1248 \times 1
 | LLaMA-2-70B | 70B | 2T | 8440 | 1720 × H100 × 13天 |
 | LLaMA-3-70B | 70B | 15T | 63300 | 16384 × H100 × 54天 |
 
-### 8.3 GPU 算力对照
+### 9.3 GPU 算力对照
 
 | GPU | BF16 算力 | 显存 | 典型 MFU |
 |-----|---------|------|---------|
@@ -544,29 +663,29 @@ $$t_{\text{prefill}} = \frac{2 \times 68.9 \times 10^9 \times 512}{1248 \times 1
 | H20 | 148 TF | 96GB | 0.45~0.55 |
 | B200 | 2250 TF | 192GB | 0.50~0.65（预估） |
 
-## 9. 常见误区与注意事项
+## 10. 常见误区与注意事项
 
-### 9.1 FLOP 口径不统一
+### 10.1 FLOP 口径不统一
 
 不同工具对 FMA（Fused Multiply-Add）的计数方式不同：NVIDIA 峰值算力将 FMA 计为 2 FLOP，但部分 profiler 将 FMA 计为 1 FLOP。做估算时要确保口径一致。
 
-### 9.2 峰值算力 ≠ 实际算力
+### 10.2 峰值算力 ≠ 实际算力
 
 GPU 数据手册列出的是理论峰值，实际训练中受内存带宽、通信开销、kernel 调度等因素影响，MFU 通常只有 0.3~0.6。用峰值算力直接估算会严重低估训练时间。
 
-### 9.3 激活值显存不可忽略
+### 10.3 激活值显存不可忽略
 
 很多人只算"模型 + 优化器 + 梯度"（约 $16P$），忽略激活值。在长序列（如 $s = 4096$）和大 batch 下，激活值可能占总显存的 30% 以上。激活值重计算（Checkpointing）可以用额外计算换显存，但会使前向 FLOPs 翻倍。
 
-### 9.4 Chinchilla 最优 ≠ 实际最优
+### 10.4 Chinchilla 最优 ≠ 实际最优
 
 Chinchilla 给出的是"训练算力效率最优"配比，但实际部署还需考虑推理成本。LLaMA 系列刻意过度训练小模型（$D/P \gg 20$），牺牲训练效率换取推理效率，这在生产环境中往往更经济。
 
-### 9.5 推理 ≠ 训练的算力逻辑
+### 10.5 推理 ≠ 训练的算力逻辑
 
 训练是 compute-bound（总算力 $6PD$），推理是 memory-bound（单 token 延迟由带宽决定）。两者优化方向完全不同：训练优化 MFU 和通信效率，推理优化 batch size 和显存利用率。用训练的算力思维去估算推理会导致严重误判。
 
-### 9.6 KV Cache 在长序列下可能超过模型权重
+### 10.6 KV Cache 在长序列下可能超过模型权重
 
 很多人估算推理显存时只算模型权重（$2P$），忽略 KV Cache。在长序列（$s = 4096+$）和大 batch 下，KV Cache 可能是模型权重的 2-3 倍。这就是为什么 vLLM 的 PagedAttention 技术如此重要。
 
@@ -581,6 +700,8 @@ Chinchilla 给出的是"训练算力效率最优"配比，但实际部署还需�
 - **Reducing Activation Recomputation**：Korthikanti et al., 2022. [arXiv:2205.05198](https://arxiv.org/abs/2205.05198)
 - **ZeRO**：Rajbhandari et al., "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models", 2020. [arXiv:1910.02054](https://arxiv.org/abs/1910.02054)
 - **Megatron-LM**：Narayanan et al., "Efficient Large-Scale Language Model Training on GPU Clusters", 2021. [arXiv:2104.04473](https://arxiv.org/abs/2104.04473)
+- **LoRA**：Hu et al., "LoRA: Low-Rank Adaptation of Large Language Models", 2021. [arXiv:2106.09685](https://arxiv.org/abs/2106.09685)
+- **QLoRA**：Dettmers et al., "QLoRA: Efficient Finetuning of Quantized LLMs", 2023. [arXiv:2305.14314](https://arxiv.org/abs/2305.14314)
 - **PagedAttention / vLLM**：Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention", 2023. [arXiv:2309.06180](https://arxiv.org/abs/2309.06180)
 - **Flash Attention**：Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", 2022. [arXiv:2205.14135](https://arxiv.org/abs/2205.14135)
 - **Speculative Decoding**：Leviathan et al., "Fast Inference from Transformers via Speculative Decoding", 2023. [arXiv:2211.17192](https://arxiv.org/abs/2211.17192)
