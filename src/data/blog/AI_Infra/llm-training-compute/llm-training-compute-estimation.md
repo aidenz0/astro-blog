@@ -1,5 +1,5 @@
 ---
-title: 大模型训练算力计算指南：从 FLOPs 到 GPU 小时
+title: 大模型算力计算指南：从训练到推理
 author: Aidenz
 pubDatetime: 2026-07-28T03:25:00Z
 slug: llm-training-compute-estimation
@@ -11,19 +11,21 @@ tags:
   - FLOPs
   - Scaling Laws
   - 训练
+  - 推理
   - GPU
-description: 系统梳理大模型训练所需算力的计算方法，涵盖 FLOPs 估算（6PD 公式）、显存需求（参数 + 优化器 + 激活值）、GPU 利用率与训练时间换算、Chinchilla Scaling Laws，并配以 LLaMA-7B 等实例计算。
+description: 系统梳理大模型训练与推理所需算力的计算方法，涵盖训练 FLOPs 估算（6PD 公式）、训练显存需求、GPU 利用率与训练时间换算、Chinchilla Scaling Laws，以及推理算力（2P/token）、KV Cache 显存、Prefill/Decode 两阶段延迟、memory-bound 与 compute-bound 分析、推理优化技术，并配以 LLaMA-7B/70B 等实例计算。
 ---
 
-> 本文整理自 OpenAI Scaling Laws（Kaplan et al., 2020）、DeepMind Chinchilla Scaling Laws（Hoffmann et al., 2022）、EleutherAI Transformer Math 101、Epoch AI 的训练算力估算方法，以及 Kipply 的 Transformer Inference Arithmetic 等资料，力求给出一套自洽且可操作的大模型训练算力计算框架。
+> 本文整理自 OpenAI Scaling Laws（Kaplan et al., 2020）、DeepMind Chinchilla Scaling Laws（Hoffmann et al., 2022）、EleutherAI Transformer Math 101、Epoch AI 的训练算力估算方法、以及 Kipply 的 Transformer Inference Arithmetic 等资料，力求给出一套自洽且可操作的大模型训练与推理算力计算框架。
 
 ## 为什么需要算力计算
 
-大语言模型（LLM）的训练成本动辄数百万美元，而算力估算是以下决策的基础：
+大语言模型（LLM）的训练成本动辄数百万美元，推理成本在生产环境中同样不可忽视。算力估算是以下决策的基础：
 
 - **训练前**：评估需要多少 GPU、训练多久、显存是否足够
 - **训练中**：监控实际 MFU（Model FLOPs Utilization），诊断效率瓶颈
 - **训练后**：对比不同模型的算力效率，验证 Scaling Laws 预测
+- **推理部署**：评估单卡可服务多少并发请求、延迟和吞吐量如何、需要多少 GPU
 
 算力的核心度量单位是 **FLOP**（浮点运算次数，Floating Point Operations）。衍生单位包括：
 
@@ -297,32 +299,211 @@ $$\text{Per-GPU} \approx \frac{1102 \text{ GB}}{32} + \text{Activations}/8 + \te
 
 ## 7. 推理算力估算
 
-训练和推理的算力计算有显著差异。训练是 batch 处理大量 token，而推理是逐 token 自回归生成。
+训练和推理的算力计算有显著差异。训练是 batch 处理大量 token（前向 + 反向），而推理是逐 token 自回归生成（仅前向）。推理的核心挑战不在于总算力，而在于**延迟**和**吞吐量**的权衡。
 
-### 7.1 前向传播 FLOPs
+### 7.1 推理的两阶段：Prefill 与 Decode
+
+LLM 推理分为两个截然不同的阶段：
+
+| 阶段 | 特点 | 瓶颈 | 计算模式 |
+|------|------|------|---------|
+| **Prefill**（预填充） | 处理输入 prompt 的所有 token，并行计算 | 通常 compute-bound | 类似训练前向，可并行处理整个序列 |
+| **Decode**（解码） | 逐 token 自回归生成，每次只处理 1 个 token | 通常 memory-bound | 每步需加载全部权重，计算量极小 |
+
+> **关键区别**：Prefill 阶段一次处理 $s$ 个 token，计算量为 $2Ps$，可充分利用 GPU 算力。Decode 阶段每步只处理 1 个 token，计算量为 $2P$，但需从显存加载全部权重 $2P$ bytes（FP16），因此受限于内存带宽而非算力。
+
+### 7.2 推理 FLOPs：每 token 2P
 
 每个 token 的前向传播 FLOPs 约为 $2P$（仅前向，无反向）：
 
-$$C_{\text{forward per token}} \approx 2P$$
+$$C_{\text{per token}} \approx 2P$$
 
-### 7.2 KV Cache 显存
+**推导**：Transformer 的主要计算来自矩阵乘法。每个 token 需要与所有权重矩阵做乘法，而矩阵-向量乘法 $A \in \mathbb{R}^{m \times n}, b \in \mathbb{R}^n$ 的 FLOPs 为 $2mn$。将所有权重矩阵的 FLOPs 求和，恰好约等于 $2P$。
 
-自回归生成需要缓存历史 token 的 Key 和 Value：
+**逐层分解**（每层每 token）：
 
-$$\text{KV Cache per token} = 2 \times 2 \times n_{\text{layers}} \times n_{\text{heads}} \times d_{\text{head}} \text{ bytes}$$
+| 操作 | FLOPs | 占比 |
+|------|-------|------|
+| QKV 投影 | $2 \times 3 \times d^2$ | 25% |
+| 输出投影 $W_o$ | $2 \times d^2$ | 8.3% |
+| MLP $W_1, W_2$ | $2 \times 8 \times d^2$ | 66.7% |
+| **合计（每层）** | $2 \times 12 \times d^2$ | 100% |
 
-（因子含义：2 对应 K 和 V，2 对应 FP16 字节数）
+> 注意力分数计算（$q \cdot k$、softmax、$\text{softmax} \cdot v$）是向量-向量运算，FLOPs 仅为 $O(d)$ 量级，相比矩阵乘法的 $O(d^2)$ 可忽略。
 
-### 7.3 Memory-bound vs Compute-bound
+### 7.3 推理显存：权重 + KV Cache
 
-推理存在一个关键比值（以 A100 为例）：
+推理所需显存远小于训练，无需优化器状态和梯度：
 
-$$\frac{\text{FLOPS}}{\text{Memory Bandwidth}} = \frac{312 \times 10^{12}}{1.5 \times 10^{12}} = 208$$
+$$\text{Total Memory}_{\text{Inference}} \approx \text{Model Weights} + \text{KV Cache} + \text{Overhead}$$
 
-- **batch size < 208**：memory-bound，生成速度受限于权重加载带宽
-- **batch size > 208**：compute-bound，生成速度受限于计算能力
+#### 模型权重
 
-这意味着在低 batch size（如单请求）下，GPU 算力大量闲置。
+| 精度 | 每参数字节数 | 7B 模型 | 70B 模型 |
+|------|------------|---------|---------|
+| INT4 | 0.5 bytes | 3.5 GB | 35 GB |
+| INT8 | 1 byte | 7 GB | 70 GB |
+| FP16/BF16 | 2 bytes | 14 GB | 140 GB |
+| FP32 | 4 bytes | 28 GB | 280 GB |
+
+> **经验公式**（EleutherAI）：推理总显存约为模型权重的 1.2 倍（含约 20% 额外开销）：$\text{Total}_{\text{Inference}} \approx 1.2 \times \text{Model Memory}$。但此公式未考虑 KV Cache，长序列下 KV Cache 可能显著增加显存。
+
+#### KV Cache
+
+自回归生成需要缓存历史 token 的 Key 和 Value 向量，避免重复计算：
+
+$$\text{KV Cache (bytes)} = 2 \times 2 \times n_{\text{layers}} \times n_{\text{heads}} \times d_{\text{head}} \times s \times b$$
+
+各因子含义：
+
+- **2**：Key 和 Value 两个向量
+- **2**：FP16/BF16 每个元素 2 bytes
+- $n_{\text{layers}}$：Transformer 层数
+- $n_{\text{heads}} \times d_{\text{head}} = d_{\text{model}}$：注意力头的总维度
+- $s$：序列长度（已生成的 token 数）
+- $b$：batch size（并发请求数）
+
+**等价简化公式**：
+
+$$\text{KV Cache} = 4 \times n_{\text{layers}} \times d_{\text{model}} \times s \times b \text{ bytes}$$
+
+**实例：LLaMA-2-70B**（$n_{\text{layers}} = 80$, $d_{\text{model}} = 8192$），FP16：
+
+$$\text{KV Cache per token} = 4 \times 80 \times 8192 = 2,621,440 \text{ bytes} \approx 2.5 \text{ MB}$$
+
+对于 4096 长度序列、batch size 32：
+
+$$\text{KV Cache} = 2.5 \text{ MB} \times 4096 \times 32 \approx 327 \text{ GB}$$
+
+这远超模型权重本身（140 GB），说明**长序列 + 大 batch 下 KV Cache 是显存瓶颈**。
+
+#### 推理总显存实例
+
+| 模型 | 精度 | 权重 | KV Cache（s=2048, b=1） | 总计 |
+|------|------|------|------------------------|------|
+| LLaMA-7B | FP16 | 14 GB | 1.1 GB | ~15 GB |
+| LLaMA-7B | INT4 | 3.5 GB | 1.1 GB | ~5 GB |
+| LLaMA-70B | FP16 | 140 GB | 13 GB | ~153 GB |
+| LLaMA-70B | INT4 | 35 GB | 13 GB | ~48 GB |
+
+> 单张 A100 80GB 可跑 FP16 的 7B 模型，但 70B 需要 2-4 张或量化为 INT4。
+
+### 7.4 Memory-bound 与 Compute-bound
+
+推理性能的关键在于判断是**内存带宽受限**还是**计算能力受限**。这取决于一个核心比值：
+
+$$R = \frac{\text{GPU FLOPS}}{\text{GPU Memory Bandwidth}}$$
+
+| GPU | 算力 (BF16) | 内存带宽 | 比值 $R$ |
+|-----|-----------|---------|---------|
+| A100 80GB | 312 TFLOP/s | 1.5 TB/s | 208 |
+| H100 SXM5 | 989 TFLOP/s | 3.35 TB/s | 295 |
+| H20 | 148 TFLOP/s | 4.0 TB/s | 37 |
+| H200 | 989 TFLOP/s | 4.8 TB/s | 206 |
+| B200 | 2250 TFLOP/s | 8.0 TB/s | 281 |
+
+**含义**：比值 $R$ 是 memory-bound 和 compute-bound 的分界线。
+
+- **batch size $< R$**：**memory-bound**。每生成一个 token，都需要从显存加载全部权重（$2P$ bytes），但只做 $2P$ FLOPs 的计算。GPU 算力大量闲置，延迟由内存带宽决定。
+- **batch size $> R$**：**compute-bound**。多个请求的 KV Cache 可共享权重加载，计算量随 batch 线性增长，GPU 算力成为瓶颈。
+
+> **核心洞察**：在低并发（如单用户请求）下，推理是 memory-bound 的。增加 batch size 可以将多个请求的权重加载"摊薄"，提升算力利用率，但会增加延迟。
+
+### 7.5 延迟计算公式
+
+#### Decode 阶段：单 token 生成延迟
+
+**Memory-bound（小 batch，$b < R$）**：
+
+$$t_{\text{decode}} \approx \frac{2P \times \text{bytes/param}}{N \times \text{Memory Bandwidth}}$$
+
+其中 $N$ 为 GPU 数（张量并行度），权重跨 GPU 分摊。
+
+**Compute-bound（大 batch，$b > R$）**：
+
+$$t_{\text{decode}} \approx \frac{2P \times b}{N \times \text{FLOPS}}$$
+
+#### Prefill 阶段：处理 prompt 延迟
+
+Prefill 一次处理 $s$ 个 token，通常 compute-bound：
+
+$$t_{\text{prefill}} \approx \frac{2P \times s}{N \times \text{FLOPS}}$$
+
+#### 实例：LLaMA-7B on A100
+
+$P = 6.74 \times 10^9$，FP16，单卡 A100（312 TFLOP/s, 1.5 TB/s）：
+
+**Decode（batch=1，memory-bound）**：
+
+$$t_{\text{decode}} = \frac{2 \times 6.74 \times 10^9 \text{ bytes}}{1.5 \times 10^{12} \text{ bytes/s}} \approx 8.99 \text{ ms/token}$$
+
+理论吞吐：$1000 / 8.99 \approx 111 \text{ tokens/s}$
+
+实际受约 10% 的中间操作开销影响，约 22 ms/token，即约 45 tokens/s。
+
+**Decode（batch=256，compute-bound）**：
+
+$$t_{\text{decode}} = \frac{2 \times 6.74 \times 10^9 \times 256}{312 \times 10^{12}} \approx 11.1 \text{ ms/token (per batch)}$$
+
+即每 11.1ms 生成 256 个 token，有效吞吐 $256 / 0.011 \approx 23{,}000 \text{ tokens/s}$。
+
+> 对比可见，从 batch=1 到 batch=256，单 token 延迟从 9ms 增至 11ms（仅增 22%），但吞吐提升了约 200 倍。这就是 batch 推理的价值。
+
+### 7.6 推理吞吐量
+
+**单卡吞吐量**（tokens/s）：
+
+$$\text{Throughput} = \frac{b}{t_{\text{decode}}} \approx \begin{cases} \frac{b \times \text{Bandwidth}}{2P} & \text{if } b < R \\\ \frac{\text{FLOPS}}{2P} & \text{if } b \geq R \end{cases}$$
+
+**关键结论**：
+
+- memory-bound 区域：吞吐量随 batch size 线性增长
+- compute-bound 区域：吞吐量达到上限，不再随 batch size 增长
+- 最优 batch size 在临界点 $b \approx R$ 附近
+
+### 7.7 推理优化技术
+
+| 技术 | 原理 | 效果 | 适用场景 |
+|------|------|------|---------|
+| **KV Cache** | 缓存历史 token 的 K/V，避免重计算 | 每步节省 5/6 计算 | 所有自回归推理 |
+| **量化（INT8/INT4）** | 降低权重精度 | 显存减半/减至 1/4，带宽需求降低 | 显存受限场景 |
+| **PagedAttention（vLLM）** | 分页管理 KV Cache 显存 | 支持 2-4× 更大 batch | 高并发服务 |
+| **Flash Attention** | 分块计算注意力 | 减少 HBM 读写，加速长序列 | 长上下文 |
+| **Speculative Decoding** | 小模型草拟 + 大模型验证 | 2-3× 解码加速 | 延迟敏感场景 |
+| **Continuous Batching** | 动态拼批，请求级粒度 | GPU 利用率从 30%→70%+ | 多请求服务 |
+| **Prefix Caching** | 缓存公共前缀的 KV | 减少重复 prefill | 多轮对话/系统提示 |
+
+> **Continuous Batching** 是现代推理引擎（vLLM、TGI）的核心技术。不同于静态 batching 需等所有请求完成才能释放资源，continuous batching 在每个 token 生成步动态插入/移除请求，使 GPU 始终保持高 batch size。
+
+### 7.8 完整推理估算实例：LLaMA-2-70B on 4×A100
+
+**模型参数**：$P = 68.9 \times 10^9$，FP16，$n_{\text{layers}} = 80$，$d_{\text{model}} = 8192$
+
+**Step 1: 显存估算**
+
+权重（4 卡分摊）：$2 \times 68.9 = 137.8 \text{ GB}$，每卡 $34.5 \text{ GB}$
+
+KV Cache（$s = 4096, b = 8$）：$4 \times 80 \times 8192 \times 4096 \times 8 \approx 85.9 \text{ GB}$，每卡 $21.5 \text{ GB}$
+
+总计每卡：$34.5 + 21.5 + \text{Overhead} \approx 60 \text{ GB}$（A100 80GB 可行）
+
+**Step 2: Decode 延迟（batch=8，memory-bound）**
+
+每卡带宽 1.5 TB/s，4 卡总带宽 6.0 TB/s：
+
+$$t_{\text{decode}} = \frac{2 \times 68.9 \times 10^9}{6.0 \times 10^{12}} \approx 23 \text{ ms/token}$$
+
+吞吐：$8 / 0.023 \approx 348 \text{ tokens/s}$
+
+**Step 3: Prefill 延迟（prompt 512 tokens，compute-bound）**
+
+4 卡总算力 $4 \times 312 = 1248$ TFLOP/s：
+
+$$t_{\text{prefill}} = \frac{2 \times 68.9 \times 10^9 \times 512}{1248 \times 10^{12}} \approx 56.5 \text{ ms}$$
+
+**Step 4: 总响应时间**
+
+生成 256 tokens 的请求：$t_{\text{prefill}} + 256 \times t_{\text{decode}} = 0.057 + 256 \times 0.023 \approx 5.9 \text{ s}$
 
 ## 8. 实用速查表
 
@@ -333,8 +514,13 @@ $$\frac{\text{FLOPS}}{\text{Memory Bandwidth}} = \frac{312 \times 10^{12}}{1.5 \
 | 训练总算力 | $C = 6PD$ FLOP |
 | 训练时间 | $T = \frac{6PD}{N \times \text{FLOPS} \times \text{MFU}}$ |
 | 训练显存（混合精度+AdamW） | $\approx 16P + \text{Activations}$ |
-| 单 token 前向 | $2P$ FLOP |
+| 推理每 token 算力 | $2P$ FLOP |
 | 推理显存（FP16） | $\approx 2P + \text{KV Cache}$ |
+| KV Cache 显存 | $4 \times n_L \times d \times s \times b$ bytes |
+| Decode 延迟（memory-bound） | $\frac{2P}{N \times \text{Bandwidth}}$ |
+| Decode 延迟（compute-bound） | $\frac{2P \times b}{N \times \text{FLOPS}}$ |
+| Prefill 延迟 | $\frac{2P \times s}{N \times \text{FLOPS}}$ |
+| 最优推理 batch | $\approx R = \frac{\text{FLOPS}}{\text{Bandwidth}}$ |
 | Chinchilla 最优数据量 | $D = 20P$ |
 
 ### 8.2 常见模型算力
@@ -376,6 +562,14 @@ GPU 数据手册列出的是理论峰值，实际训练中受内存带宽、通�
 
 Chinchilla 给出的是"训练算力效率最优"配比，但实际部署还需考虑推理成本。LLaMA 系列刻意过度训练小模型（$D/P \gg 20$），牺牲训练效率换取推理效率，这在生产环境中往往更经济。
 
+### 9.5 推理 ≠ 训练的算力逻辑
+
+训练是 compute-bound（总算力 $6PD$），推理是 memory-bound（单 token 延迟由带宽决定）。两者优化方向完全不同：训练优化 MFU 和通信效率，推理优化 batch size 和显存利用率。用训练的算力思维去估算推理会导致严重误判。
+
+### 9.6 KV Cache 在长序列下可能超过模型权重
+
+很多人估算推理显存时只算模型权重（$2P$），忽略 KV Cache。在长序列（$s = 4096+$）和大 batch 下，KV Cache 可能是模型权重的 2-3 倍。这就是为什么 vLLM 的 PagedAttention 技术如此重要。
+
 ## 参考资料
 
 - **OpenAI Scaling Laws**：Kaplan et al., "Scaling Laws for Neural Language Models", 2020. [arXiv:2001.08361](https://arxiv.org/abs/2001.08361)
@@ -387,3 +581,6 @@ Chinchilla 给出的是"训练算力效率最优"配比，但实际部署还需�
 - **Reducing Activation Recomputation**：Korthikanti et al., 2022. [arXiv:2205.05198](https://arxiv.org/abs/2205.05198)
 - **ZeRO**：Rajbhandari et al., "ZeRO: Memory Optimizations Toward Training Trillion Parameter Models", 2020. [arXiv:1910.02054](https://arxiv.org/abs/1910.02054)
 - **Megatron-LM**：Narayanan et al., "Efficient Large-Scale Language Model Training on GPU Clusters", 2021. [arXiv:2104.04473](https://arxiv.org/abs/2104.04473)
+- **PagedAttention / vLLM**：Kwon et al., "Efficient Memory Management for Large Language Model Serving with PagedAttention", 2023. [arXiv:2309.06180](https://arxiv.org/abs/2309.06180)
+- **Flash Attention**：Dao et al., "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness", 2022. [arXiv:2205.14135](https://arxiv.org/abs/2205.14135)
+- **Speculative Decoding**：Leviathan et al., "Fast Inference from Transformers via Speculative Decoding", 2023. [arXiv:2211.17192](https://arxiv.org/abs/2211.17192)
