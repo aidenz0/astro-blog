@@ -100,10 +100,13 @@ $$T = \frac{C}{\tau} = \frac{6PD}{N_{\text{GPU}} \times \text{FLOPS}_{\text{GPU}
 | V100 | FP16 Tensor Core | 125 TFLOP/s | 32GB | NVLink 300GB/s |
 | A100 80GB | BF16 Tensor Core | 312 TFLOP/s | 80GB | NVLink 600GB/s |
 | H100 SXM5 | BF16 Tensor Core | 989 TFLOP/s | 80GB | NVLink 900GB/s |
+| H20（中国市场） | BF16 Tensor Core | 148 TFLOP/s | 96GB | NVLink 900GB/s |
 | H200 | BF16 Tensor Core | 989 TFLOP/s | 141GB | NVLink 900GB/s |
 | B200 | BF16 Tensor Core | 2250 TFLOP/s | 192GB | NVLink 1.8TB/s |
 
 > **FMA 约定**：NVIDIA 峰值算力将 Fused Multiply-Add（FMA）计为 2 FLOP。一些 profiler（如 fvcore）将 FMA 计为 1 FLOP，需注意统一口径。
+>
+> **H20 说明**：H20 是 NVIDIA 为应对美国出口管制而面向中国市场推出的 Hopper 架构阉割版。与 H100 相比，BF16 算力大幅削减（仅为 H100 的约 15%），但显存增至 96GB HBM3，NVLink 互联带宽保持 900GB/s。这使得 H20 在大规模推理场景下仍具优势，但训练效率受限。
 
 ### 2.3 MFU（Model FLOPs Utilization）
 
@@ -352,6 +355,7 @@ $$\frac{\text{FLOPS}}{\text{Memory Bandwidth}} = \frac{312 \times 10^{12}}{1.5 \
 | V100 | 125 TF | 32GB | 0.25~0.35 |
 | A100 | 312 TF | 80GB | 0.40~0.55 |
 | H100 | 989 TF | 80GB | 0.45~0.60 |
+| H20 | 148 TF | 96GB | 0.45~0.55 |
 | B200 | 2250 TF | 192GB | 0.50~0.65（预估） |
 
 ## 9. 常见误区与注意事项
