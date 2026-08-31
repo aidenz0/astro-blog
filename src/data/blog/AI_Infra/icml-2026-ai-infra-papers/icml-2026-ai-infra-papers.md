@@ -1,20 +1,14 @@
 ---
-title: "ICML 2026 最值得推荐的 AI Infra 论文：从 GPU 训练、LLM Serving 到 Agent Infra"
+title: ICML 2026 最值得推荐的 AI Infra 论文：从 GPU 训练、LLM Serving 到 Agent Infra
 author: Aidenz
-pubDatetime: 2026-08-31T03:00:00Z
+pubDatetime: 2026-08-31T00:00:00Z
 slug: icml-2026-ai-infra-papers
 featured: false
 draft: false
 tags:
-  - AI Infra
-  - ICML 2026
-  - GPU 训练
-  - LLM Serving
-  - Agent Infra
-description: "用 GPU/Training System、LLM Serving 和 Agent Infra 三条主线梳理 ICML 2026 的 AI Infra 趋势与 Insight，并从每个主题精选三篇论文做深入且简洁的解析。"
+  - AIInfra
+description: 用 GPU/Training System、LLM Serving 和 Agent Infra 三条主线梳理 ICML 2026 的 AI Infra 趋势与 Insight，并从每个主题精选三篇论文做深入且简洁的解析。
 ---
-
-> 本文整理自微信公众号「AI泡哥」同名文章（原文发布于 2026 年 7 月 20 日），在保持原意的前提下对排版与图注做了整理，便于查阅。文中所有配图均来自原文。
 
 ## 前言
 
