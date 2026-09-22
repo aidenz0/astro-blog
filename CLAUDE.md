@@ -104,7 +104,8 @@ git restore --staged <文件>         # 取消暂存（保留改动）
 - `EditPost.astro` — 编辑页面链接（基于 `src/config.ts` 中的 `editPost` 配置）
 
 ### 工具层
-- `src/utils/getSortedPosts.ts` — 文章排序（按发布时间）
+- `src/utils/getSortedPosts.ts` — 文章排序（按 `modDatetime ?? pubDatetime` 倒序）
+- `src/utils/postFilter.ts` — 文章可见性过滤（草稿 + 定时发布门槛，见下文「定时发布」）
 - `src/utils/readingTime.ts` — 阅读时间估算
 - `src/utils/slugify.ts` — URL slug 生成
 - `src/utils/getPath.ts` — 路径处理
@@ -143,6 +144,23 @@ description: 文章描述摘要
 ```
 
 文章 URL 路径会包含子目录，例如 `src/data/blog/react/xxx.md` 的 URL 为 `/posts/react/xxx`。
+
+### 定时发布（pubDatetime 重要约束）
+
+文章是否出现在 `/posts` 列表、首页、标签页等**聚合页**，由 `src/utils/postFilter.ts` 控制：
+
+```ts
+const isPublishTimePassed =
+  Date.now() > new Date(data.pubDatetime).getTime() - SITE.scheduledPostMargin;
+return !data.draft && (import.meta.env.DEV || isPublishTimePassed);
+```
+
+- **生产构建**（`astro build` / Vercel 部署）时，`import.meta.env.DEV` 为 `false`，于是只有 `isPublishTimePassed` 为真（即 `当前时间 > pubDatetime - scheduledPostMargin`）的文章才会进入聚合页。
+- `scheduledPostMargin` 默认 15 分钟（见 `src/config.ts`），即允许比 pubDatetime 早最多 15 分钟出现。
+- **开发模式**（`pnpm run dev`）下 `DEV` 为 `true`，门槛被绕过，所有非草稿文章都显示 —— 所以本地能看到、线上列表却没有的典型表现。
+- 注意：详情页 `posts/[...slug]/index.astro` 的 `getStaticPaths` 只过滤 `draft`，**不检查发布时间**，因此「详情页能打开但列表里没有」正是 pubDatetime 晚于构建时间的信号。
+
+**写文章时务必遵守**：`pubDatetime` 要设为**早于推送触发构建的时刻**，否则 Vercel 构建生成聚合页时该文会被过滤掉，直到下次构建（例如再 push 一次）才会出现。保守做法：发布当天的文章把 `pubDatetime` 设为当天 `00:00:00Z`，不要设成"现在"或未来时间。
 
 ### 用 Obsidian 写作
 

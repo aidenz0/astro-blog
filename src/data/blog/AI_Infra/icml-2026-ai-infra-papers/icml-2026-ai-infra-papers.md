@@ -1,7 +1,7 @@
 ---
 title: ICML 2026 最值得推荐的 AI Infra 论文：从 GPU 训练、LLM Serving 到 Agent Infra
 author: Aidenz
-pubDatetime: 2026-08-31T00:00:00Z
+pubDatetime: 2026-08-31T03:00:00Z
 slug: icml-2026-ai-infra-papers
 featured: false
 draft: false
